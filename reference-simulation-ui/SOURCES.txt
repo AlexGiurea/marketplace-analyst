@@ -1,0 +1,26 @@
+Official imagery from Marketplace® Business Simulations (Interpretive).
+Site: https://www.marketplace-simulation.com/
+
+Files01, 03, 05, 07 — "CA-*" category hero illustrations (Bike Edition branding art) from:
+- Core: https://www.marketplace-simulation.com/core-business-simulations/
+  CA-Core-2x-1024x853.png
+- Capstone / advanced: https://www.marketplace-simulation.com/capstone-simulations/
+  CA-Advanced-2x-1024x853.png
+- Strategic management: https://www.marketplace-simulation.com/strategic-management-simulations/
+  CA-StratManage-2x-1024x853.png
+- Marketing: https://www.marketplace-simulation.com/marketing-simulations/
+  CA-Marketing-2x-1024x853.png
+
+Files 02, 04, 06, 08 — "CF-*" horizontal strips of in-product window screenshots (student-facing
+UI: opportunity analysis, marketing / product design, production, sales & staffing, financial /
+multi-quarter performance, etc.). Same pages as above:
+ CF-Core-2x-1024x291.png, CF-Advanced-2x-1024x291.png, CF-StratManage-2x-1024x291.png,
+  CF-Marketing-2x-1024x291.png
+
+File 09 — hero banner JPEG from core business page:
+  bkg-MPcore-2048x922-1.jpg
+
+These are vendor marketing composites. For live play, students use https://play.marketplace-simulation.com/
+(sign-in). Raw full-window captures are not published on the marketing site in the same way.
+
+Trademark: Marketplace® is a registered trademark of its owner.
