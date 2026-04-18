@@ -1,5 +1,7 @@
 # Marketplace Analyst
 
+**Live demo:** [https://marketplace-analyst.vercel.app](https://marketplace-analyst.vercel.app) · **Source:** [github.com/AlexGiurea/marketplace-analyst](https://github.com/AlexGiurea/marketplace-analyst)
+
 **Marketplace Analyst** is a demonstration web app that pairs a **Marketplace®-style business simulation** (bikes strategy course context) with an **AI coach**. The coach answers in plain language while staying **grounded in the current quarter’s snapshot**: KPIs, brands, competitors, manufacturing, finance, and scorecard themes are compiled into retrievable text chunks; the model may call **tools** to pull exact figures from the live `DemoSnapshot` so it does not invent numbers.
 
 > **Disclaimer:** The UI and data are **fictional** and recreated for a student innovation pitch. Not affiliated with Marketplace® or ILS.
