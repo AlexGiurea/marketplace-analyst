@@ -1,0 +1,33 @@
+{
+  "name": "marketplace-analyst",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI coach for a Marketplace-style business simulation: grounded chat over a live demo snapshot, retrieval, and OpenAI tool calls.",
+  "keywords": [
+    "marketplace-simulation",
+    "business-strategy",
+    "ai-coach",
+    "openai",
+    "react",
+    "vite",
+    "education"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AlexGiurea/marketplace-analyst.git"
+  },
+  "scripts": {
+    "dev": "npm run dev --prefix server",
+    "build": "npm run build --prefix frontend",
+    "start": "npm run start --prefix server",
+    "test": "npm test --prefix server",
+    "vercel-build": "npm run build --prefix frontend"
+  },
+  "devDependencies": {
+    "@vercel/node": "^3.2.29"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

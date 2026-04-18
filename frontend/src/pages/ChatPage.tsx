@@ -11,20 +11,132 @@ type Message = {
   content: string;
 };
 
+type FormattedBlock =
+  | {
+      kind: "paragraph";
+      lines: string[];
+    }
+  | {
+      kind: "bullets" | "numbered";
+      lines: string[];
+    };
+
 const SEED: Message[] = [
   {
     id: "s1",
     role: "assistant",
     content:
-      "Hi — I'm your AI Coach. For this pitch demo, answers are meant to ground in your team's posted quarter snapshot (same data as the Workspace page). Open Quarter workspace anytime to see the numbers behind the coaching.",
-  },
-  {
-    id: "s2",
-    role: "assistant",
-    content:
-      'Try asking: "What changed in manufacturing vs last quarter?" or "Which Balanced Scorecard theme looks weakest and why?" The production assistant will pull facts from the indexed snapshot plus tools; this build still uses a demo echo.',
+      'Ask about this quarter, your biggest risks, or the tradeoffs behind a decision. I’ll keep it short and use the current snapshot.',
   },
 ];
+
+function cleanMessageContent(content: string): string {
+  return content
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/:\s+-\s+/g, ":\n- ")
+    .replace(/\]\.\s+-\s+/g, "].\n- ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function parseMessageBlocks(content: string): FormattedBlock[] {
+  const cleaned = cleanMessageContent(content);
+  if (!cleaned) return [];
+
+  const lines = cleaned
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const blocks: FormattedBlock[] = [];
+  let current: FormattedBlock | null = null;
+
+  const flush = () => {
+    if (current && current.lines.length > 0) blocks.push(current);
+    current = null;
+  };
+
+  for (const line of lines) {
+    const bullet = line.match(/^[-*•]\s+(.+)$/);
+    const numbered = line.match(/^\d+[.)]\s+(.+)$/);
+
+    if (bullet) {
+      if (!current || current.kind !== "bullets") {
+        flush();
+        current = { kind: "bullets", lines: [] };
+      }
+      current.lines.push(bullet[1]);
+      continue;
+    }
+
+    if (numbered) {
+      if (!current || current.kind !== "numbered") {
+        flush();
+        current = { kind: "numbered", lines: [] };
+      }
+      current.lines.push(numbered[1]);
+      continue;
+    }
+
+    if (!current || current.kind !== "paragraph") {
+      flush();
+      current = { kind: "paragraph", lines: [] };
+    }
+    current.lines.push(line);
+  }
+
+  flush();
+  return blocks;
+}
+
+function ThinkingDots({ light = false }: { light?: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1" aria-hidden>
+      {[0, 1, 2].map((dot) => (
+        <span
+          key={dot}
+          className={`thinking-dot h-1.5 w-1.5 rounded-full ${light ? "bg-white" : "bg-[#0D50AC]"}`}
+          style={{ animationDelay: `${dot * 140}ms` }}
+        />
+      ))}
+    </span>
+  );
+}
+
+function AssistantBody({ content }: { content: string }) {
+  const blocks = parseMessageBlocks(content);
+  if (blocks.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      {blocks.map((block, index) => {
+        if (block.kind === "paragraph") {
+          return (
+            <p key={index} className="text-[0.95rem] leading-7 text-slate-800">
+              {block.lines.join(" ")}
+            </p>
+          );
+        }
+
+        const ListTag = block.kind === "numbered" ? "ol" : "ul";
+        const listClass =
+          block.kind === "numbered"
+            ? "list-decimal space-y-1.5 pl-5 text-[0.95rem] leading-7 text-slate-800"
+            : "list-disc space-y-1.5 pl-5 text-[0.95rem] leading-7 text-slate-800";
+
+        return (
+          <ListTag key={index} className={listClass}>
+            {block.lines.map((line, itemIndex) => (
+              <li key={itemIndex}>{line}</li>
+            ))}
+          </ListTag>
+        );
+      })}
+    </div>
+  );
+}
 
 function CoachAvatar() {
   return (
@@ -53,34 +165,72 @@ function CoachAvatar() {
   );
 }
 
-function mockReply(userText: string): string {
-  const trimmed = userText.trim();
-  if (!trimmed) return "Send a message to see the demo echo.";
-  return `Demo echo: "${trimmed}" — next step: wire /api/chat to inject snapshot JSON + retrieval chunks so replies cite section IDs like perf-share or score-mfg.`;
-}
-
 export function ChatPage() {
   const { snapshot: d, randomize, reset } = useDemoData();
   const [messages, setMessages] = useState<Message[]>(SEED);
   const [input, setInput] = useState("");
-  const [showIndex, setShowIndex] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [showIndex, setShowIndex] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  }, [messages, loading]);
 
-  function send() {
+  async function send() {
     const text = input.trim();
-    if (!text) return;
+    if (!text || loading) return;
     const uid = `u-${crypto.randomUUID()}`;
-    const aid = `a-${crypto.randomUUID()}`;
+    const userMessage: Message = { id: uid, role: "user", content: text };
+    const history = [...messages, userMessage];
     setInput("");
-    setMessages((prev) => [
-      ...prev,
-      { id: uid, role: "user", content: text },
-      { id: aid, role: "assistant", content: mockReply(text) },
-    ]);
+    setMessages(history);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          snapshot: d,
+          messages: history.map((m) => ({ role: m.role, content: m.content })),
+        }),
+      });
+      const raw = (await res.json().catch(() => null)) as { message?: string; error?: string } | null;
+      if (!res.ok) {
+        const errText =
+          raw && typeof raw.error === "string"
+            ? raw.error
+            : `I couldn't get a reply right now (${res.status}).`;
+        setMessages((prev) => [
+          ...prev,
+          { id: `a-${crypto.randomUUID()}`, role: "assistant", content: errText },
+        ]);
+        return;
+      }
+      const reply =
+        raw && typeof raw.message === "string"
+          ? raw.message
+          : "I couldn't generate a reply right now.";
+      setMessages((prev) => [
+        ...prev,
+        { id: `a-${crypto.randomUUID()}`, role: "assistant", content: reply },
+      ]);
+    } catch (e) {
+      const hint =
+        e instanceof Error
+          ? e.message
+          : "Check that the dev server is running (from the repo: npm run dev in server/, or npm run dev at the root).";
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `a-${crypto.randomUUID()}`,
+          role: "assistant",
+          content: `I couldn't reach the AI coach right now. ${hint}`,
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -91,13 +241,13 @@ export function ChatPage() {
         <div className="border-b border-white/45 bg-white/50 px-4 py-3 backdrop-blur-md sm:px-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#0B6381]">Grounded demo</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#0B6381]">Current context</p>
               <p className="mt-0.5 text-sm text-slate-800">
                 <span className="font-semibold">{d.quarter.label}</span>
                 <span className="text-slate-400"> · </span>
                 <span>{d.company.name}</span>
                 <span className="text-slate-400"> · </span>
-                <span className="text-slate-600">snapshot v1 (fictional)</span>
+                <span className="text-slate-600">demo snapshot</span>
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -106,7 +256,7 @@ export function ChatPage() {
                 onClick={randomize}
                 className="rounded-2xl border border-[#0B6381] bg-[#0B6381] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0c7394] sm:text-sm"
               >
-                Randomize data
+                New scenario
               </button>
               <button
                 type="button"
@@ -119,7 +269,7 @@ export function ChatPage() {
                 to="/workspace"
                 className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-[#0B6381]/25 bg-[#0B6381]/10 px-4 py-2.5 text-sm font-semibold text-[#0B6381] shadow-sm transition hover:bg-[#0B6381]/15"
               >
-                Open quarter workspace →
+                Open workspace →
               </Link>
             </div>
           </div>
@@ -130,7 +280,7 @@ export function ChatPage() {
               onClick={() => setShowIndex((v) => !v)}
               className="flex w-full items-center justify-between text-left text-xs font-semibold text-slate-700"
             >
-              <span>Knowledge index (what RAG / tools will retrieve)</span>
+              <span>Source notes</span>
               <span className="text-[#0D50AC]">{showIndex ? "Hide" : "Show"}</span>
             </button>
             {showIndex && (
@@ -151,7 +301,7 @@ export function ChatPage() {
           <CoachAvatar />
           <div className="min-w-0 pr-1">
             <p className="text-xs font-semibold text-[#0B6381] sm:text-sm">AI Coach</p>
-            <p className="truncate text-[10px] text-slate-600/80 sm:text-xs">Assistant · uses workspace snapshot (planned)</p>
+            <p className="truncate text-[10px] text-slate-600/80 sm:text-xs">Grounded in the current quarter</p>
           </div>
         </div>
 
@@ -166,17 +316,17 @@ export function ChatPage() {
               style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
             >
               {m.role === "assistant" ? (
-                <div className="flex max-w-[min(100%,28rem)] gap-2.5">
+                <div className="flex max-w-[min(100%,32rem)] gap-2.5">
                   <div className="mt-0.5 hidden h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#0B6381]/15 bg-white/70 text-[10px] font-extrabold leading-none text-[#0B6381] shadow-sm backdrop-blur-sm sm:flex">
                     AI
                   </div>
-                  <div className="rounded-2xl rounded-tl-md border border-white/60 bg-white/80 px-4 py-2.5 text-[0.9375rem] leading-relaxed text-slate-800 shadow-[0_2px_16px_rgba(11,99,129,0.06)] backdrop-blur-sm">
-                    {m.content}
+                  <div className="rounded-2xl rounded-tl-md border border-white/60 bg-white/80 px-4 py-3 text-slate-800 shadow-[0_2px_16px_rgba(11,99,129,0.06)] backdrop-blur-sm">
+                    <AssistantBody content={m.content} />
                   </div>
                 </div>
               ) : (
                 <div
-                  className="max-w-[min(100%,24rem)] rounded-2xl rounded-tr-md border border-white/50 px-4 py-2.5 text-[0.9375rem] leading-relaxed text-slate-800 shadow-sm backdrop-blur-sm"
+                  className="max-w-[min(100%,26rem)] rounded-2xl rounded-tr-md border border-white/50 px-4 py-2.5 text-[0.9375rem] leading-relaxed text-slate-800 shadow-sm backdrop-blur-sm"
                   style={{ backgroundColor: "#D1D9DC" }}
                 >
                   {m.content}
@@ -184,6 +334,19 @@ export function ChatPage() {
               )}
             </div>
           ))}
+          {loading && (
+            <div className="message-animate flex justify-start">
+              <div className="flex max-w-[min(100%,20rem)] gap-2.5">
+                <div className="mt-0.5 hidden h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#0B6381]/15 bg-white/70 text-[10px] font-extrabold leading-none text-[#0B6381] shadow-sm backdrop-blur-sm sm:flex">
+                  AI
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-2xl rounded-tl-md border border-white/60 bg-white/80 px-4 py-3 text-sm font-medium text-slate-600 shadow-[0_2px_16px_rgba(11,99,129,0.06)] backdrop-blur-sm">
+                  Thinking
+                  <ThinkingDots />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <footer className="shrink-0 border-t border-white/50 bg-white/55 px-3 py-4 backdrop-blur-md sm:px-5">
@@ -195,24 +358,33 @@ export function ChatPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  send();
+                  void send();
                 }
               }}
-              placeholder="Ask about results, risks, or tradeoffs…"
-              className="min-w-0 flex-1 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 text-[0.9375rem] text-slate-800 shadow-inner outline-none ring-[#0D50AC]/0 transition-[box-shadow,ring] duration-200 placeholder:text-slate-400 focus:border-[#0D50AC]/35 focus:bg-white focus:ring-4 focus:ring-[#0D50AC]/18"
+              disabled={loading}
+              placeholder="Ask about results, risks, or next steps…"
+              className="min-w-0 flex-1 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 text-[0.9375rem] text-slate-800 shadow-inner outline-none ring-[#0D50AC]/0 transition-[box-shadow,ring] duration-200 placeholder:text-slate-400 focus:border-[#0D50AC]/35 focus:bg-white focus:ring-4 focus:ring-[#0D50AC]/18 disabled:opacity-60"
               aria-label="Message"
             />
             <button
               type="button"
-              onClick={send}
-              className="shrink-0 rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-md transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-md"
+              onClick={() => void send()}
+              disabled={loading}
+              className="shrink-0 rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-md transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-md disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               style={{ backgroundColor: "#0D50AC" }}
             >
-              Send
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  Thinking
+                  <ThinkingDots light />
+                </span>
+              ) : (
+                "Ask"
+              )}
             </button>
           </div>
-          <p className="mt-3 text-center text-xs italic leading-snug text-slate-500/90">
-            AI can make mistakes. Outputs may be visible to your organization — verify before acting.
+          <p className="mt-3 text-center text-xs leading-snug text-slate-500/90">
+            Check important numbers before you act.
           </p>
         </footer>
       </div>

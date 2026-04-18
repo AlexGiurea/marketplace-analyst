@@ -1,4 +1,4 @@
-import type { DemoSnapshot } from "../types/demoSnapshot";
+import type { DemoSnapshot } from "../types/demoSnapshot.js";
 
 /** Baseline demo data — use `initialDemoSnapshot` with `DemoDataProvider` for live/randomized state. */
 export const initialDemoSnapshot: DemoSnapshot = {

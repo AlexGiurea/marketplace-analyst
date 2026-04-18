@@ -32,3 +32,20 @@
 .message-animate {
   animation: msg-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+@keyframes thinking-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+
+.thinking-dot {
+  animation: thinking-dot 1.05s ease-in-out infinite;
+}

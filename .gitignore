@@ -1,5 +1,7 @@
 node_modules/
+server/.vite/
 dist/
+.vercel/
 .env
 .env.local
 *.log
