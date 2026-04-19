@@ -212,7 +212,7 @@ function CoachAvatar() {
 }
 
 export function ChatPage() {
-  const { snapshot: d } = useDemoData();
+  const { snapshot: d, scenario, activeQuarterIndex } = useDemoData();
   const { messages, setMessages, input, setInput, loading, setLoading } = useChatCoach();
   const [showIndex, setShowIndex] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
@@ -235,7 +235,8 @@ export function ChatPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          snapshot: d,
+          scenario,
+          activeQuarterIndex,
           messages: history.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
@@ -327,7 +328,9 @@ export function ChatPage() {
           <CoachAvatar />
           <div className="min-w-0 pr-1">
             <p className="text-xs font-semibold text-[#0B6381] sm:text-sm">AI Coach</p>
-            <p className="truncate text-[10px] text-slate-600/80 sm:text-xs">Grounded in the current quarter</p>
+            <p className="truncate text-[10px] text-slate-600/80 sm:text-xs">
+              {scenario.quarters.length > 1 ? "Multi-quarter data; defaults to your workspace quarter" : "Grounded in the current quarter"}
+            </p>
           </div>
         </div>
 

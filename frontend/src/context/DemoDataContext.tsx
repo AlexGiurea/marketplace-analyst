@@ -1,9 +1,14 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { initialDemoSnapshot } from "../data/demoSnapshot";
-import { randomizeDemoSnapshot } from "../data/randomizeDemoSnapshot";
-import type { DemoSnapshot } from "../types/demoSnapshot";
+import { initialDemoScenario, materializeSnapshot } from "../data/demoScenario";
+import { randomizeDemoScenario } from "../data/randomizeDemoSnapshot";
+import type { DemoScenario, DemoSnapshot } from "../types/demoSnapshot";
+
+const LAST_QUARTER_INDEX = initialDemoScenario.quarters.length - 1;
 
 type DemoDataContextValue = {
+  scenario: DemoScenario;
+  activeQuarterIndex: number;
+  setActiveQuarterIndex: (index: number) => void;
   snapshot: DemoSnapshot;
   randomize: () => void;
   reset: () => void;
@@ -12,23 +17,34 @@ type DemoDataContextValue = {
 const DemoDataContext = createContext<DemoDataContextValue | null>(null);
 
 export function DemoDataProvider({ children }: { children: ReactNode }) {
-  const [snapshot, setSnapshot] = useState<DemoSnapshot>(initialDemoSnapshot);
+  const [scenario, setScenario] = useState<DemoScenario>(initialDemoScenario);
+  const [activeQuarterIndex, setActiveQuarterIndex] = useState(LAST_QUARTER_INDEX);
+
+  const snapshot = useMemo(
+    () => materializeSnapshot(scenario, activeQuarterIndex),
+    [scenario, activeQuarterIndex],
+  );
 
   const randomize = useCallback(() => {
-    setSnapshot(randomizeDemoSnapshot());
+    setScenario(randomizeDemoScenario());
+    setActiveQuarterIndex(LAST_QUARTER_INDEX);
   }, []);
 
   const reset = useCallback(() => {
-    setSnapshot(initialDemoSnapshot);
+    setScenario(initialDemoScenario);
+    setActiveQuarterIndex(LAST_QUARTER_INDEX);
   }, []);
 
   const value = useMemo(
     () => ({
+      scenario,
+      activeQuarterIndex,
+      setActiveQuarterIndex,
       snapshot,
       randomize,
       reset,
     }),
-    [snapshot, randomize, reset],
+    [scenario, activeQuarterIndex, snapshot, randomize, reset],
   );
 
   return <DemoDataContext.Provider value={value}>{children}</DemoDataContext.Provider>;

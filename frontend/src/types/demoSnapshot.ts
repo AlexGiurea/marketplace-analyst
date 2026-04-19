@@ -187,3 +187,14 @@ export type DemoSnapshot = {
   };
   knowledgeIndex: { id: string; section: string; fact: string }[];
 };
+
+/** One quarter of simulation data (everything below company + simulation in `DemoSnapshot`). */
+export type DemoQuarterSlice = Omit<DemoSnapshot, "uiDisclaimer" | "simulation" | "company">;
+
+/** Full multi-quarter demo: shared company/sim metadata plus one slice per quarter (Q1…Qn). */
+export type DemoScenario = {
+  uiDisclaimer: string;
+  simulation: DemoSnapshot["simulation"];
+  company: DemoSnapshot["company"];
+  quarters: DemoQuarterSlice[];
+};

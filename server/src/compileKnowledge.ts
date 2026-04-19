@@ -1,4 +1,5 @@
-import type { DemoSnapshot } from "../../frontend/src/types/demoSnapshot.js";
+import type { DemoScenario, DemoSnapshot } from "../../frontend/src/types/demoSnapshot.js";
+import { materializeSnapshot } from "../../frontend/src/data/demoScenario.js";
 
 export type KnowledgeChunk = {
   id: string;
@@ -127,4 +128,31 @@ export function compileKnowledge(snapshot: DemoSnapshot): KnowledgeBundle {
   const overview = `${company.name} — ${quarter.label}. Share ${performance.overallSharePct}%. Revenue ${money(accounting.revenue)}, net income ${money(accounting.netIncome)}. Weakest manufacturing score theme check Balanced Scorecard rows.`;
 
   return { chunks, overview };
+}
+
+/**
+ * Compile all quarters into one chunk corpus with `q{n}-` id prefixes (retrieval + citations can target a quarter).
+ */
+export function compileScenarioKnowledge(scenario: DemoScenario, activeQuarterIndex: number): KnowledgeBundle {
+  const allChunks: KnowledgeChunk[] = [];
+  for (let i = 0; i < scenario.quarters.length; i++) {
+    const snap = materializeSnapshot(scenario, i);
+    const bundle = compileKnowledge(snap);
+    const qPrefix = `q${i + 1}`;
+    for (const c of bundle.chunks) {
+      allChunks.push({
+        ...c,
+        id: `${qPrefix}-${c.id}`,
+        metadata: {
+          ...c.metadata,
+          quarterIndex: String(i + 1),
+          quarterLabel: snap.quarter.label,
+        },
+      });
+    }
+  }
+  const activeSnap = materializeSnapshot(scenario, activeQuarterIndex);
+  const activeBundle = compileKnowledge(activeSnap);
+  const overview = `Multi-quarter demo (${scenario.quarters.length} quarters). Active quarter: ${activeSnap.quarter.label}. ${activeBundle.overview}`;
+  return { chunks: allChunks, overview };
 }

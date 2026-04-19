@@ -52,10 +52,42 @@ function tokenize(q: string): string[] {
     .filter((t) => t.length > 1 && !STOP.has(t));
 }
 
+/** 1-based quarter index if the user names a quarter explicitly (Q2, quarter 3, …). */
+export function parseExplicitQuarterFromQuery(query: string): number | null {
+  const q = query.toLowerCase();
+  const m1 = q.match(/\b(?:q|quarter)\s*([1-9]\d*)\b/);
+  if (m1) {
+    const n = parseInt(m1[1], 10);
+    return Number.isFinite(n) && n >= 1 ? n : null;
+  }
+  const m2 = q.match(/\bquarter\s*([1-9]\d*)\b/);
+  if (m2) {
+    const n = parseInt(m2[1], 10);
+    return Number.isFinite(n) && n >= 1 ? n : null;
+  }
+  return null;
+}
+
+export type RetrieveChunksOptions = {
+  /** 0-based index of the quarter the UI is focused on. */
+  activeQuarterIndex?: number;
+  /** When true, chunk corpus includes `metadata.quarterIndex`. */
+  multiQuarter?: boolean;
+};
+
 /** Lightweight lexical retriever — good enough for small compiled corpora. */
-export function retrieveChunks(query: string, chunks: KnowledgeChunk[], max = 8): KnowledgeChunk[] {
+export function retrieveChunks(
+  query: string,
+  chunks: KnowledgeChunk[],
+  max = 8,
+  opts?: RetrieveChunksOptions,
+): KnowledgeChunk[] {
   const terms = tokenize(query);
   if (terms.length === 0) return chunks.slice(0, max);
+
+  const explicitQuarter = parseExplicitQuarterFromQuery(query);
+  const active1Based =
+    opts?.activeQuarterIndex !== undefined ? opts.activeQuarterIndex + 1 : null;
 
   const scored = chunks.map((c) => {
     const hay = `${c.id} ${c.section} ${c.text}`.toLowerCase();
@@ -67,6 +99,16 @@ export function retrieveChunks(query: string, chunks: KnowledgeChunk[], max = 8)
     if (c.section === "manufacturing" && (query.includes("capacity") || query.includes("inventory") || query.includes("stock"))) score += 4;
     if (c.section === "finance" && (query.includes("cash") || query.includes("debt") || query.includes("dividend"))) score += 4;
     if (c.section === "marketing" && (query.includes("price") || query.includes("ad") || query.includes("brand"))) score += 3;
+
+    const qMeta = c.metadata.quarterIndex;
+    if (opts?.multiQuarter && qMeta) {
+      if (explicitQuarter !== null) {
+        if (qMeta === String(explicitQuarter)) score += 8;
+      } else if (active1Based !== null && qMeta === String(active1Based)) {
+        score += 5;
+      }
+    }
+
     return { c, score };
   });
 

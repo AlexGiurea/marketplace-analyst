@@ -15,6 +15,15 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+/** Strip `q2-` prefix from retrieval chunk ids so citations map to workspace anchors. */
+export function stripQuarterPrefix(citationId: string): { quarter1Based: number | null; baseId: string } {
+  const m = citationId.match(/^q([1-9]\d*)-(.*)$/);
+  if (m) {
+    return { quarter1Based: parseInt(m[1], 10), baseId: m[2] };
+  }
+  return { quarter1Based: null, baseId: citationId };
+}
+
 const DIRECT_MAP: Record<string, CitationDestination> = {
   "meta-team-quarter": {
     moduleId: "performance",
@@ -124,12 +133,14 @@ const DIRECT_MAP: Record<string, CitationDestination> = {
 };
 
 export function resolveCitationDestination(citationId: string): CitationDestination | null {
-  if (DIRECT_MAP[citationId]) {
-    return DIRECT_MAP[citationId];
+  const { baseId } = stripQuarterPrefix(citationId);
+
+  if (DIRECT_MAP[baseId]) {
+    return DIRECT_MAP[baseId];
   }
 
-  if (citationId.startsWith("brand-")) {
-    const brandName = citationId.slice("brand-".length);
+  if (baseId.startsWith("brand-")) {
+    const brandName = baseId.slice("brand-".length);
     const brandLabel = brandName.charAt(0).toUpperCase() + brandName.slice(1);
     return {
       moduleId: "performance",
@@ -140,8 +151,8 @@ export function resolveCitationDestination(citationId: string): CitationDestinat
     };
   }
 
-  if (citationId.startsWith("competitor-")) {
-    const competitorName = citationId.slice("competitor-".length);
+  if (baseId.startsWith("competitor-")) {
+    const competitorName = baseId.slice("competitor-".length);
     const competitorLabel = competitorName.charAt(0).toUpperCase() + competitorName.slice(1);
     return {
       moduleId: "performance",
@@ -152,8 +163,8 @@ export function resolveCitationDestination(citationId: string): CitationDestinat
     };
   }
 
-  if (citationId.startsWith("scorecard-")) {
-    const themeSlug = citationId.slice("scorecard-".length);
+  if (baseId.startsWith("scorecard-")) {
+    const themeSlug = baseId.slice("scorecard-".length);
     return {
       moduleId: "performance",
       subId: "balanced-scorecard",
@@ -172,10 +183,15 @@ export function buildCitationHref(citationId: string): string {
     return "/workspace";
   }
 
+  const { quarter1Based } = stripQuarterPrefix(citationId);
+
   const params = new URLSearchParams({
     module: destination.moduleId,
     sub: destination.subId,
   });
+  if (quarter1Based !== null) {
+    params.set("quarter", String(quarter1Based));
+  }
 
   return `/workspace?${params.toString()}${destination.sectionId ? `#${destination.sectionId}` : ""}`;
 }

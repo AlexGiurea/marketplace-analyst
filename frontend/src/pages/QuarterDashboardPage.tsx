@@ -6,7 +6,7 @@ import { defaultSubForModule, WORKSPACE_NAV, type ModuleId } from "../workspace/
 import { WorkspacePanels } from "../workspace/WorkspacePanels";
 
 export function QuarterDashboardPage() {
-  const { snapshot: d } = useDemoData();
+  const { snapshot: d, scenario, activeQuarterIndex, setActiveQuarterIndex } = useDemoData();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
 
@@ -27,10 +27,33 @@ export function QuarterDashboardPage() {
     [activeModule, subId],
   );
 
-  const quarters = useMemo(
-    () => Array.from({ length: d.simulation.decisionRoundsTotal }, (_, i) => i + 1),
-    [d.simulation.decisionRoundsTotal],
+  const quarterOptions = useMemo(
+    () => Array.from({ length: scenario.quarters.length }, (_, i) => i + 1),
+    [scenario.quarters.length],
   );
+
+  useEffect(() => {
+    if (searchParams.get("quarter") !== null) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("quarter", String(activeQuarterIndex + 1));
+    setSearchParams(next, { replace: true });
+  }, [activeQuarterIndex, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const raw = searchParams.get("quarter");
+    if (raw === null) return;
+    const n = parseInt(raw, 10);
+    if (!Number.isFinite(n) || n < 1 || n > scenario.quarters.length) return;
+    setActiveQuarterIndex(n - 1);
+  }, [searchParams, scenario.quarters.length, setActiveQuarterIndex]);
+
+  useEffect(() => {
+    const raw = searchParams.get("quarter");
+    if (raw === String(activeQuarterIndex + 1)) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("quarter", String(activeQuarterIndex + 1));
+    setSearchParams(next, { replace: true });
+  }, [activeQuarterIndex, searchParams, setSearchParams]);
 
   useEffect(() => {
     const currentModule = searchParams.get("module");
@@ -87,11 +110,17 @@ export function QuarterDashboardPage() {
               <span className="hidden sm:inline">Quarter</span>
               <select
                 className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-900 shadow-sm"
-                value={d.quarter.index}
-                disabled
-                aria-label="Quarter (demo fixed)"
+                value={activeQuarterIndex + 1}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10);
+                  setActiveQuarterIndex(n - 1);
+                  const next = new URLSearchParams(searchParams);
+                  next.set("quarter", String(n));
+                  setSearchParams(next, { replace: true });
+                }}
+                aria-label="View results for quarter"
               >
-                {quarters.map((q) => (
+                {quarterOptions.map((q) => (
                   <option key={q} value={q}>
                     Quarter {q}
                   </option>

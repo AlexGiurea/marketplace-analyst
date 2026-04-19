@@ -7,10 +7,13 @@ import type {
   DemoOutlet,
   DemoRegionSales,
   DemoScorecardRow,
+  DemoScenario,
   DemoSnapshot,
   DemoStrategicGraphPoint,
   Trend,
 } from "../types/demoSnapshot";
+import { buildKnowledgeIndex } from "./knowledgeIndexBuilder";
+import { materializeSnapshot, scenarioFromLatestSnapshot } from "./demoScenario";
 import { initialDemoSnapshot } from "./demoSnapshot";
 
 function ri(min: number, max: number): number {
@@ -75,57 +78,11 @@ function buildBrand(
   };
 }
 
-function buildKnowledgeIndex(d: DemoSnapshot): DemoSnapshot["knowledgeIndex"] {
-  const [b0, b1] = d.performance.brands;
-  const mfg = d.balancedScorecard.find((r) => r.theme === "Manufacturing productivity");
-  const lastGraph = d.performance.strategicGraph[d.performance.strategicGraph.length - 1];
-  const firstGraph = d.performance.strategicGraph[0];
-  return [
-    {
-      id: "perf-share",
-      section: "Performance & reports",
-      fact: `Team overall share ${d.performance.overallSharePct}% after last processed quarter; ${b0.name} stockout ${b0.stockout ? "yes" : "no"}, ${b1.name} ending inventory ${b1.endingInventory} units.`,
-    },
-    {
-      id: "score-mfg",
-      section: "Balanced scorecard",
-      fact: mfg
-        ? `Manufacturing productivity score ${mfg.score} (prior ${mfg.priorScore}) — ${mfg.trend === "down" ? "pressure from capacity/stockouts" : "stable vs prior"}.`
-        : "Manufacturing productivity updated in scorecard.",
-    },
-    {
-      id: "mkt-price",
-      section: "Marketing → Pricing",
-      fact: `${b0.name} price ${b0.price.toLocaleString()}; ${b1.name} ${b1.price.toLocaleString()}; rebates ${b0.rebate} / ${b1.rebate}.`,
-    },
-    {
-      id: "mfg-cap",
-      section: "Manufacturing",
-      fact: `Operating capacity ${d.manufacturing.operatingCapacityUnits} units; utilization ${d.manufacturing.utilizationPct}%; forecast ${d.manufacturing.demandForecastNext.Core ?? 0} / ${d.manufacturing.demandForecastNext.Nomad ?? 0} next quarter.`,
-    },
-    {
-      id: "fin-cash",
-      section: "Finance",
-      fact: `Ending cash ${Math.round(d.accounting.endingCash / 1000)}k; dividends ${Math.round(d.finance.dividends / 1000)}k; short-term debt ${Math.round(d.finance.shortTermDebt / 1000)}k.`,
-    },
-    {
-      id: "hr-prod",
-      section: "Human resources",
-      fact: `Sales productivity index ${d.humanResources.salesProductivityIndex} vs baseline 100; training ${d.humanResources.trainingHoursPerQuarter} hrs/quarter.`,
-    },
-    {
-      id: "graph-appeal",
-      section: "Strategic graphs",
-      fact: `Market appeal ${firstGraph.marketAppealIndex} → ${lastGraph.marketAppealIndex}; share ${firstGraph.sharePct}% → ${lastGraph.sharePct}%.`,
-    },
-  ];
-}
-
 /**
  * Generates a new coherent-enough snapshot for pitch demos.
  * Monetary totals stay in a “single mid-size firm” band (~$1.8M–$2.8M revenue), not toy or absurd values.
  */
-export function randomizeDemoSnapshot(): DemoSnapshot {
+function generateRandomizedQuarterSnapshot(): DemoSnapshot {
   const base = initialDemoSnapshot;
 
   const coreDemand = ri(320, 480);
@@ -484,4 +441,15 @@ export function randomizeDemoSnapshot(): DemoSnapshot {
   snapshot.knowledgeIndex = buildKnowledgeIndex(snapshot);
 
   return snapshot;
+}
+
+/** Randomize all quarters (Q1–Q3 derived from randomized Q4). */
+export function randomizeDemoScenario(): DemoScenario {
+  return scenarioFromLatestSnapshot(generateRandomizedQuarterSnapshot());
+}
+
+/** Single-quarter view: latest quarter of a randomized scenario (backward compatible). */
+export function randomizeDemoSnapshot(): DemoSnapshot {
+  const scenario = randomizeDemoScenario();
+  return materializeSnapshot(scenario, scenario.quarters.length - 1);
 }

@@ -6,17 +6,22 @@ import type {
   ResponseInputItem,
   ResponseOutputItem,
 } from "openai/resources/responses/responses.js";
-import type { DemoSnapshot } from "../../frontend/src/types/demoSnapshot.js";
-import { compileKnowledge } from "./compileKnowledge.js";
+import type { DemoScenario, DemoSnapshot } from "../../frontend/src/types/demoSnapshot.js";
+import { compileKnowledge, compileScenarioKnowledge } from "./compileKnowledge.js";
 import { retrieveChunks } from "./retriever.js";
-import { RESPONSE_TOOL_DEFINITIONS, runTool } from "./tools.js";
+import { RESPONSE_TOOL_DEFINITIONS, runTool, type ToolRuntimeContext } from "./tools.js";
 
 export type ChatTurn = { role: "user" | "assistant"; content: string };
 
-function buildSystemPrompt(snapshot: DemoSnapshot, retrievedBlock: string, overview: string): string {
+function buildSystemPrompt(snapshot: DemoSnapshot, retrievedBlock: string, overview: string, multiQuarter: boolean): string {
+  const scope = multiQuarter
+    ? "The client may have multiple quarters of data. Default to the active quarter unless the user names another quarter or asks for comparisons or trends."
+    : "Focus on the current quarter snapshot.";
+
   return `You are the AI Coach for a Marketplace-style business simulation demo.
 
 Rules (non-negotiable):
+- ${scope}
 - Treat the live snapshot and tool outputs as the only source of truth for numbers and facts.
 - Never invent KPIs, financial figures, or competitor data.
 - Write in plain, simple language.
@@ -50,31 +55,53 @@ function getFunctionCalls(items: ResponseOutputItem[]): ResponseFunctionToolCall
   return items.filter((item): item is ResponseFunctionToolCall => item.type === "function_call");
 }
 
-function buildMetadata(snapshot: DemoSnapshot, retrievedChunkIds: string[]): Record<string, string> {
+function buildMetadata(
+  snapshot: DemoSnapshot,
+  retrievedChunkIds: string[],
+  scenario: DemoScenario | undefined,
+  activeQuarterIndex: number,
+): Record<string, string> {
   return {
     app: "marketplace-analyst-chat",
     team_id: snapshot.company.teamId,
     quarter: snapshot.quarter.label,
+    active_quarter_index: String(activeQuarterIndex),
+    scenario_quarters: scenario ? String(scenario.quarters.length) : "1",
     retrieved_chunks: retrievedChunkIds.slice(0, 8).join(","),
   };
 }
 
 export async function runChat(options: {
   snapshot: DemoSnapshot;
+  scenario?: DemoScenario;
+  activeQuarterIndex?: number;
   messages: ChatTurn[];
   apiKey: string;
   model: string;
 }): Promise<{ message: string; retrievedChunkIds: string[] }> {
   const { snapshot, messages, apiKey, model } = options;
+  const scenario = options.scenario;
+  const activeQuarterIndex =
+    typeof options.activeQuarterIndex === "number" && Number.isFinite(options.activeQuarterIndex)
+      ? Math.max(0, Math.floor(options.activeQuarterIndex))
+      : scenario
+        ? scenario.quarters.length - 1
+        : 0;
+  const multiQuarter = Boolean(scenario && scenario.quarters.length > 1);
 
-  const bundle = compileKnowledge(snapshot);
+  const bundle = scenario
+    ? compileScenarioKnowledge(scenario, activeQuarterIndex)
+    : compileKnowledge(snapshot);
   const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
-  const retrieved = retrieveChunks(lastUser, bundle.chunks, 8);
+  const retrieved = retrieveChunks(lastUser, bundle.chunks, 8, {
+    activeQuarterIndex,
+    multiQuarter,
+  });
   const retrievedBlock = retrieved.map((c) => `[${c.id}] (${c.section}) ${c.text}`).join("\n\n");
-  const system = buildSystemPrompt(snapshot, retrievedBlock, bundle.overview);
+  const system = buildSystemPrompt(snapshot, retrievedBlock, bundle.overview, multiQuarter);
 
   const openai = new OpenAI({ apiKey });
-  const metadata = buildMetadata(snapshot, retrieved.map((c) => c.id));
+  const metadata = buildMetadata(snapshot, retrieved.map((c) => c.id), scenario, activeQuarterIndex);
   // Omit max_output_tokens: gpt-5.x returns 400 if the request maps to unsupported `max_tokens`.
   const baseRequest: Omit<ResponseCreateParamsNonStreaming, "input"> = {
     model,
@@ -107,6 +134,11 @@ export async function runChat(options: {
       return { message: text, retrievedChunkIds: retrieved.map((c) => c.id) };
     }
 
+    const toolCtx: ToolRuntimeContext = {
+      snapshot,
+      scenario,
+      activeQuarterIndex,
+    };
     pendingInput = functionCalls.map((call) => {
       const name = call.name;
       let args: Record<string, unknown> = {};
@@ -118,7 +150,7 @@ export async function runChat(options: {
       return {
         type: "function_call_output" as const,
         call_id: call.call_id,
-        output: runTool(name, args, snapshot),
+        output: runTool(name, args, toolCtx),
       };
     });
     previousResponseId = response.id;
