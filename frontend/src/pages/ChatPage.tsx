@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  CoachWidgetRenderer,
+  InlineRichText,
+  parseAssistantSegments,
+  type ChatRenderContext,
+} from "../chat/coachWidgets";
 import { TopNav } from "../components/TopNav";
 import { useChatCoach, type ChatMessage } from "../context/ChatCoachContext";
 import { useDemoData } from "../context/DemoDataContext";
@@ -76,65 +82,6 @@ function parseMessageBlocks(content: string): FormattedBlock[] {
   return blocks;
 }
 
-type InlinePart =
-  | { kind: "text"; text: string }
-  | { kind: "citation"; id: string };
-
-function parseInlineParts(text: string): InlinePart[] {
-  const parts: InlinePart[] = [];
-  const regex = /\[([^[\]]+)\]/g;
-  let lastIndex = 0;
-
-  for (const match of text.matchAll(regex)) {
-    const start = match.index ?? 0;
-    if (start > lastIndex) {
-      parts.push({ kind: "text", text: text.slice(lastIndex, start) });
-    }
-    parts.push({ kind: "citation", id: match[1].trim() });
-    lastIndex = start + match[0].length;
-  }
-
-  if (lastIndex < text.length) {
-    parts.push({ kind: "text", text: text.slice(lastIndex) });
-  }
-
-  return parts.length > 0 ? parts : [{ kind: "text", text }];
-}
-
-function InlineRichText({ text }: { text: string }) {
-  const parts = parseInlineParts(text);
-
-  return (
-    <>
-      {parts.map((part, index) => {
-        if (part.kind === "text") {
-          return <span key={index}>{part.text}</span>;
-        }
-
-        const destination = resolveCitationDestination(part.id);
-        if (!destination) {
-          return (
-            <span key={index} className="font-medium text-slate-500">
-              [{part.id}]
-            </span>
-          );
-        }
-
-        return (
-          <Link
-            key={index}
-            to={buildCitationHref(part.id)}
-            title={`${destination.title} (${part.id})`}
-            className="rounded-md bg-sky-50 px-1.5 py-0.5 font-medium text-[#0D50AC] underline decoration-[#0D50AC]/35 underline-offset-2 transition hover:bg-sky-100"
-          >
-            [{destination.label}]
-          </Link>
-        );
-      })}
-    </>
-  );
-}
-
 function ThinkingDots({ light = false }: { light?: boolean }) {
   return (
     <span className="inline-flex items-center gap-1" aria-hidden>
@@ -149,37 +96,52 @@ function ThinkingDots({ light = false }: { light?: boolean }) {
   );
 }
 
-function AssistantBody({ content }: { content: string }) {
+function AssistantTextBlocks({ content }: { content: string }) {
   const blocks = parseMessageBlocks(content);
   if (blocks.length === 0) return null;
 
+  return blocks.map((block, index) => {
+    if (block.kind === "paragraph") {
+      return (
+        <p key={index} className="text-[0.95rem] leading-7 text-slate-800">
+          <InlineRichText text={block.lines.join(" ")} />
+        </p>
+      );
+    }
+
+    const ListTag = block.kind === "numbered" ? "ol" : "ul";
+    const listClass =
+      block.kind === "numbered"
+        ? "list-decimal space-y-1.5 pl-5 text-[0.95rem] leading-7 text-slate-800"
+        : "list-disc space-y-1.5 pl-5 text-[0.95rem] leading-7 text-slate-800";
+
+    return (
+      <ListTag key={index} className={listClass}>
+        {block.lines.map((line, itemIndex) => (
+          <li key={itemIndex}>
+            <InlineRichText text={line} />
+          </li>
+        ))}
+      </ListTag>
+    );
+  });
+}
+
+function AssistantBody({ content, context }: { content: string; context: ChatRenderContext }) {
+  const segments = parseAssistantSegments(content);
+  if (segments.length === 0) return null;
+
   return (
     <div className="space-y-3">
-      {blocks.map((block, index) => {
-        if (block.kind === "paragraph") {
-          return (
-            <p key={index} className="text-[0.95rem] leading-7 text-slate-800">
-              <InlineRichText text={block.lines.join(" ")} />
-            </p>
-          );
-        }
-
-        const ListTag = block.kind === "numbered" ? "ol" : "ul";
-        const listClass =
-          block.kind === "numbered"
-            ? "list-decimal space-y-1.5 pl-5 text-[0.95rem] leading-7 text-slate-800"
-            : "list-disc space-y-1.5 pl-5 text-[0.95rem] leading-7 text-slate-800";
-
-        return (
-          <ListTag key={index} className={listClass}>
-            {block.lines.map((line, itemIndex) => (
-              <li key={itemIndex}>
-                <InlineRichText text={line} />
-              </li>
-            ))}
-          </ListTag>
-        );
-      })}
+      {segments.map((segment, index) =>
+        segment.kind === "text" ? (
+          <div key={index} className="space-y-3">
+            <AssistantTextBlocks content={segment.content} />
+          </div>
+        ) : (
+          <CoachWidgetRenderer key={index} widget={segment.widget} context={context} />
+        ),
+      )}
     </div>
   );
 }
@@ -216,6 +178,7 @@ export function ChatPage() {
   const { messages, setMessages, input, setInput, loading, setLoading } = useChatCoach();
   const [showIndex, setShowIndex] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const currentRenderContext: ChatRenderContext = { snapshot: d, scenario, activeQuarterIndex };
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
@@ -248,7 +211,12 @@ export function ChatPage() {
             : `I couldn't get a reply right now (${res.status}).`;
         setMessages((prev) => [
           ...prev,
-          { id: `a-${crypto.randomUUID()}`, role: "assistant", content: errText },
+          {
+            id: `a-${crypto.randomUUID()}`,
+            role: "assistant",
+            content: errText,
+            widgetContext: currentRenderContext,
+          },
         ]);
         return;
       }
@@ -258,7 +226,12 @@ export function ChatPage() {
           : "I couldn't generate a reply right now.";
       setMessages((prev) => [
         ...prev,
-        { id: `a-${crypto.randomUUID()}`, role: "assistant", content: reply },
+        {
+          id: `a-${crypto.randomUUID()}`,
+          role: "assistant",
+          content: reply,
+          widgetContext: currentRenderContext,
+        },
       ]);
     } catch (e) {
       const hint =
@@ -271,6 +244,7 @@ export function ChatPage() {
           id: `a-${crypto.randomUUID()}`,
           role: "assistant",
           content: `I couldn't reach the AI coach right now. ${hint}`,
+          widgetContext: currentRenderContext,
         },
       ]);
     } finally {
@@ -350,7 +324,7 @@ export function ChatPage() {
                     AI
                   </div>
                   <div className="rounded-2xl rounded-tl-md border border-white/60 bg-white/80 px-4 py-3 text-slate-800 shadow-[0_2px_16px_rgba(11,99,129,0.06)] backdrop-blur-sm">
-                    <AssistantBody content={m.content} />
+                    <AssistantBody content={m.content} context={m.widgetContext ?? currentRenderContext} />
                   </div>
                 </div>
               ) : (

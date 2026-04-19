@@ -8,6 +8,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from "react";
+import type { DemoScenario, DemoSnapshot } from "../types/demoSnapshot";
 
 export type ChatRole = "user" | "assistant";
 
@@ -15,6 +16,11 @@ export type ChatMessage = {
   id: string;
   role: ChatRole;
   content: string;
+  widgetContext?: {
+    snapshot: DemoSnapshot;
+    scenario?: DemoScenario;
+    activeQuarterIndex: number;
+  };
 };
 
 const CHAT_SEED: ChatMessage[] = [
