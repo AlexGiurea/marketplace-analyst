@@ -16,6 +16,13 @@ function money(n: number): string {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 /**
  * Deterministic text views of the live snapshot for hybrid retrieval (keyword overlap).
  * Numeric truth remains in JSON + tools; chunks help routing and narrative grounding.
@@ -68,7 +75,7 @@ export function compileKnowledge(snapshot: DemoSnapshot): KnowledgeBundle {
 
   for (const row of balancedScorecard) {
     chunks.push({
-      id: `scorecard-${row.theme.slice(0, 12).replace(/\s+/g, "-").toLowerCase()}`,
+      id: `scorecard-${slugify(row.theme)}`,
       section: "balanced-scorecard",
       text: `Balanced Scorecard — ${row.theme}: score ${row.score} (prior ${row.priorScore}), trend ${row.trend}, weight ${row.weightPct}%, cumulative ${row.cumulativeScore}.`,
       metadata: { theme: row.theme },

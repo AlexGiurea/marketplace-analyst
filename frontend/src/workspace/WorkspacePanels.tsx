@@ -6,9 +6,16 @@ export function fmtMoney(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-function PanelCard({ title, children }: { title: string; children: ReactNode }) {
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function PanelCard({ title, children, sectionId }: { title: string; children: ReactNode; sectionId?: string }) {
   return (
-    <section className="rounded-lg border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5">
+    <section id={sectionId} className="scroll-mt-24 rounded-lg border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5">
       <h3 className="border-b border-slate-100 pb-2 text-sm font-semibold text-slate-900">{title}</h3>
       <div className="mt-3">{children}</div>
     </section>
@@ -36,7 +43,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
             <strong>Results period:</strong> {d.quarter.viewingResultsFor}. Compare demand, sell-through, and inventory before entering{" "}
             {d.quarter.preparingDecisionsFor}.
           </InfoBanner>
-          <PanelCard title="Performance report — unit sales & profitability by brand">
+          <PanelCard title="Performance report — unit sales & profitability by brand" sectionId="performance-report-panel">
             <div className="overflow-x-auto">
               <table className="min-w-[640px] w-full border-collapse text-sm">
                 <thead>
@@ -54,7 +61,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
                 </thead>
                 <tbody>
                   {d.performance.brands.map((b) => (
-                    <tr key={b.name} className="border-b border-slate-100 text-slate-800">
+                    <tr key={b.name} id={`brand-row-${slugify(b.name)}`} className="scroll-mt-24 border-b border-slate-100 text-slate-800">
                       <td className="py-2.5 pr-3 font-medium">{b.name}</td>
                       <td className="py-2.5 pr-3 text-slate-600">{b.segment}</td>
                       <td className="py-2.5 pr-3">{b.demand}</td>
@@ -69,7 +76,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
                 </tbody>
               </table>
             </div>
-            <p className="mt-3 text-xs text-slate-600">
+            <p id="overall-share" className="mt-3 scroll-mt-24 text-xs text-slate-600">
               Team share (overall): <span className="font-semibold text-slate-900">{d.performance.overallSharePct}%</span>
             </p>
           </PanelCard>
@@ -116,7 +123,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "financial-reports") {
       return (
-        <PanelCard title="Financial reports — quick links (period)">
+        <PanelCard title="Financial reports — quick links (period)" sectionId="financial-reports-panel">
           <p className="text-sm text-slate-700">
             Vendor materials reference <strong>basic financial statements</strong>, <strong>brand profitability</strong>, and{" "}
             <strong>industry financial ratios</strong>. Use the <em>Accounting</em> module for line-by-line views in this demo.
@@ -132,7 +139,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "balanced-scorecard") {
       return (
-        <PanelCard title="Balanced scorecard — period scores & cumulative (demo)">
+        <PanelCard title="Balanced scorecard — period scores & cumulative (demo)" sectionId="balanced-scorecard-panel">
           <p className="mb-3 text-xs text-slate-600">
             Nine themes per official Core SKU copy. LMS grade narrative: last quarter&apos;s <strong>cumulative</strong> scorecard (scalar) —
             demo shows both period and running cumulative per row.
@@ -151,7 +158,11 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
               </thead>
               <tbody>
                 {d.balancedScorecard.map((row) => (
-                  <tr key={row.theme} className="border-b border-slate-100">
+                  <tr
+                    key={row.theme}
+                    id={`scorecard-theme-${slugify(row.theme)}`}
+                    className="scroll-mt-24 border-b border-slate-100"
+                  >
                     <td className="py-2.5 pr-3">{row.theme}</td>
                     <td className="py-2.5 pr-3 text-slate-600">{row.weightPct}%</td>
                     <td className="py-2.5 pr-3 font-semibold">{row.score}</td>
@@ -180,7 +191,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     if (subId === "strategic-graphs") {
       return (
         <>
-          <PanelCard title="Strategic graphs — market appeal, profit, share (trend)">
+          <PanelCard title="Strategic graphs — market appeal, profit, share (trend)" sectionId="strategic-graphs-panel">
             <div className="overflow-x-auto">
               <table className="min-w-[520px] w-full border-collapse text-sm">
                 <thead>
@@ -212,7 +223,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "competitor-profile") {
       return (
-        <PanelCard title="Competitor profile">
+        <PanelCard title="Competitor profile" sectionId="competitor-profile-panel">
           <div className="overflow-x-auto">
             <table className="min-w-[640px] w-full border-collapse text-sm">
               <thead>
@@ -228,7 +239,11 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
               </thead>
               <tbody>
                 {d.performance.competitors.map((c) => (
-                  <tr key={c.name} className="border-b border-slate-100">
+                  <tr
+                    key={c.name}
+                    id={`competitor-row-${slugify(c.name)}`}
+                    className="scroll-mt-24 border-b border-slate-100"
+                  >
                     <td className="py-2.5 pr-3 font-medium">{c.name}</td>
                     <td className="py-2.5 pr-3">{c.sharePct}%</td>
                     <td className="py-2.5 pr-3">{c.brandCount}</td>
@@ -246,7 +261,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "detail-brand-demand") {
       return (
-        <PanelCard title="Detail brand demand — competitive set">
+        <PanelCard title="Detail brand demand — competitive set" sectionId="detail-brand-demand-panel">
           <div className="overflow-x-auto">
             <table className="min-w-[640px] w-full border-collapse text-sm">
               <thead>
@@ -280,7 +295,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     if (subId === "brand-management") {
       return (
         <>
-          <PanelCard title="Brand management — profitability workspace">
+        <PanelCard title="Brand management — profitability workspace" sectionId="brand-management-panel">
             <div className="overflow-x-auto">
               <table className="min-w-[560px] w-full border-collapse text-sm">
                 <thead>
@@ -327,7 +342,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "pricing") {
       return (
-        <PanelCard title="Pricing — retail & rebates">
+        <PanelCard title="Pricing — retail & rebates" sectionId="pricing-panel">
           <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
             {d.performance.brands.map((b) => (
               <li key={b.name}>
@@ -392,7 +407,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
   if (moduleId === "sales") {
     if (subId === "sales-results") {
       return (
-        <PanelCard title="Sales results — by region & brand">
+        <PanelCard title="Sales results — by region & brand" sectionId="sales-results-panel">
           <div className="overflow-x-auto">
             <table className="min-w-[560px] w-full border-collapse text-sm">
               <thead>
@@ -452,10 +467,10 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     if (subId === "competitors-city") {
       return (
         <>
-          <PanelCard title="Competitors in the city (narrative)">
+          <PanelCard title="Competitors in the city (narrative)" sectionId="competitors-city-panel">
             <p className="text-sm text-slate-700">{d.sales.competitorsInCityNote}</p>
           </PanelCard>
-          <PanelCard title="Your outlets & coverage">
+          <PanelCard title="Your outlets & coverage" sectionId="sales-outlets-panel">
             <div className="overflow-x-auto">
               <table className="min-w-[520px] w-full border-collapse text-sm">
                 <thead>
@@ -468,7 +483,11 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
                 </thead>
                 <tbody>
                   {d.sales.outlets.map((o) => (
-                    <tr key={`${o.market}-${o.cityLabel}`} className="border-b border-slate-100">
+                    <tr
+                      key={`${o.market}-${o.cityLabel}`}
+                      id={`sales-outlet-${slugify(`${o.market}-${o.cityLabel}`)}`}
+                      className="scroll-mt-24 border-b border-slate-100"
+                    >
                       <td className="py-2.5 pr-3 font-medium">{o.market}</td>
                       <td className="py-2.5 pr-3">{o.cityLabel}</td>
                       <td className="py-2.5 pr-3">{o.outletsOpen}</td>
@@ -485,7 +504,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     if (subId === "sales-force") {
       return (
         <>
-          <PanelCard title="Sales force — headcount & compensation drivers">
+        <PanelCard title="Sales force — headcount & compensation drivers" sectionId="sales-force-panel">
             <p className="text-sm text-slate-700">
               Active salespeople: <span className="font-semibold">{d.sales.salespeople}</span>
               <span className="mx-2 text-slate-300">|</span>
@@ -535,7 +554,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
   if (moduleId === "manufacturing") {
     if (subId === "inventory-results") {
       return (
-        <PanelCard title="Inventory & prior-period results">
+        <PanelCard title="Inventory & prior-period results" sectionId="manufacturing-inventory-results">
           <ul className="space-y-2 text-sm text-slate-700">
             <li>
               Ending inventory (units): <span className="font-semibold">{d.manufacturing.endingInventoryTotal}</span>
@@ -554,7 +573,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "facilities") {
       return (
-        <PanelCard title="Production facilities">
+        <PanelCard title="Production facilities" sectionId="manufacturing-facilities">
           <div className="overflow-x-auto">
             <table className="min-w-[480px] w-full border-collapse text-sm">
               <thead>
@@ -582,7 +601,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "demand-capacity") {
       return (
-        <PanelCard title="Demand projection & operating capacity">
+        <PanelCard title="Demand projection & operating capacity" sectionId="manufacturing-demand-capacity">
           <p className="text-sm text-slate-700">
             Operating capacity (total): <span className="font-semibold">{d.manufacturing.operatingCapacityUnits}</span> units · portfolio
             utilization <span className="font-semibold">{d.manufacturing.utilizationPct}%</span>
@@ -611,7 +630,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "quality") {
       return (
-        <PanelCard title="Quality & reliability">
+        <PanelCard title="Quality & reliability" sectionId="manufacturing-quality-panel">
           <ul className="space-y-2 text-sm text-slate-700">
             <li>
               Warranty expense: <span className="font-semibold">{fmtMoney(d.manufacturing.quality.warrantyExpense)}</span>
@@ -651,7 +670,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "productivity") {
       return (
-        <PanelCard title="Productivity & training">
+        <PanelCard title="Productivity & training" sectionId="hr-productivity-panel">
           <ul className="space-y-2 text-sm text-slate-700">
             <li>
               Sales productivity index: <span className="font-semibold">{d.humanResources.salesProductivityIndex}</span> (baseline 100)
@@ -668,7 +687,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
   if (moduleId === "accounting") {
     if (subId === "income-statement") {
       return (
-        <PanelCard title="Income statement (simplified)">
+        <PanelCard title="Income statement (simplified)" sectionId="income-statement-panel">
           <div className="overflow-x-auto">
             <table className="min-w-[400px] w-full border-collapse text-sm">
               <tbody>
@@ -689,7 +708,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "cash-flow") {
       return (
-        <PanelCard title="Cash flow (summary)">
+        <PanelCard title="Cash flow (summary)" sectionId="cash-flow-panel">
           <div className="overflow-x-auto">
             <table className="min-w-[360px] w-full border-collapse text-sm">
               <tbody>
@@ -712,7 +731,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "balance-sheet") {
       return (
-        <PanelCard title="Balance sheet (summary)">
+        <PanelCard title="Balance sheet (summary)" sectionId="balance-sheet-panel">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm">
               <p className="text-xs font-semibold uppercase text-slate-500">Assets</p>
@@ -732,7 +751,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "brand-profitability") {
       return (
-        <PanelCard title="Brand profitability report">
+        <PanelCard title="Brand profitability report" sectionId="brand-profitability-panel">
           <div className="overflow-x-auto">
             <table className="min-w-[560px] w-full border-collapse text-sm">
               <thead>
@@ -760,7 +779,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "industry-ratios") {
       return (
-        <PanelCard title="Industry financial ratios">
+        <PanelCard title="Industry financial ratios" sectionId="industry-ratios-panel">
           <div className="overflow-x-auto">
             <table className="min-w-[480px] w-full border-collapse text-sm">
               <thead>
@@ -793,7 +812,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
   if (moduleId === "finance") {
     if (subId === "capital-structure") {
       return (
-        <PanelCard title="Debt & equity">
+        <PanelCard title="Debt & equity" sectionId="capital-structure-panel">
           <ul className="space-y-2 text-sm text-slate-700">
             <li>
               Short-term debt: <span className="font-semibold">{fmtMoney(d.finance.shortTermDebt)}</span>
@@ -812,7 +831,7 @@ export function WorkspacePanels({ d, moduleId, subId }: PanelProps) {
     }
     if (subId === "shareholder") {
       return (
-        <PanelCard title="Dividends & repurchase">
+        <PanelCard title="Dividends & repurchase" sectionId="shareholder-panel">
           <p className="text-sm text-slate-700">
             Dividends declared: <span className="font-semibold">{fmtMoney(d.finance.dividends)}</span>
           </p>

@@ -1,13 +1,25 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { TopNav } from "../components/TopNav";
 import { useDemoData } from "../context/DemoDataContext";
 import { defaultSubForModule, WORKSPACE_NAV, type ModuleId } from "../workspace/navConfig";
 import { WorkspacePanels } from "../workspace/WorkspacePanels";
 
 export function QuarterDashboardPage() {
-  const { snapshot: d, randomize, reset } = useDemoData();
-  const [moduleId, setModuleId] = useState<ModuleId>("performance");
-  const [subId, setSubId] = useState(() => defaultSubForModule("performance"));
+  const { snapshot: d } = useDemoData();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+
+  const requestedModule = searchParams.get("module");
+  const moduleId: ModuleId = WORKSPACE_NAV.some((m) => m.moduleId === requestedModule)
+    ? (requestedModule as ModuleId)
+    : "performance";
+  const requestedSub = searchParams.get("sub");
+  const moduleConfig = WORKSPACE_NAV.find((m) => m.moduleId === moduleId);
+  const subId =
+    requestedSub && moduleConfig?.subs.some((s) => s.subId === requestedSub)
+      ? requestedSub
+      : defaultSubForModule(moduleId);
 
   const activeModule = useMemo(() => WORKSPACE_NAV.find((m) => m.moduleId === moduleId), [moduleId]);
   const activeSubLabel = useMemo(
@@ -19,6 +31,35 @@ export function QuarterDashboardPage() {
     () => Array.from({ length: d.simulation.decisionRoundsTotal }, (_, i) => i + 1),
     [d.simulation.decisionRoundsTotal],
   );
+
+  useEffect(() => {
+    const currentModule = searchParams.get("module");
+    const currentSub = searchParams.get("sub");
+    if (currentModule === moduleId && currentSub === subId) return;
+
+    const next = new URLSearchParams(searchParams);
+    next.set("module", moduleId);
+    next.set("sub", subId);
+    setSearchParams(next, { replace: true });
+  }, [moduleId, searchParams, setSearchParams, subId]);
+
+  useEffect(() => {
+    const hashId = location.hash.replace(/^#/, "");
+    if (!hashId) return;
+
+    const handle = window.requestAnimationFrame(() => {
+      document.getElementById(hashId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    return () => window.cancelAnimationFrame(handle);
+  }, [location.hash, moduleId, subId]);
+
+  const selectWorkspaceView = (nextModuleId: ModuleId, nextSubId: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("module", nextModuleId);
+    next.set("sub", nextSubId);
+    setSearchParams(next);
+  };
 
   return (
     <div className="min-h-dvh bg-[#d8e4e8] px-0 py-0 sm:px-4 sm:py-5">
@@ -57,21 +98,6 @@ export function QuarterDashboardPage() {
                 ))}
               </select>
             </label>
-            <button
-              type="button"
-              onClick={randomize}
-              className="rounded border border-[#0B6381] bg-[#0B6381] px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0c7394]"
-              title="Randomize all demo numbers within realistic bands (same structure)"
-            >
-              Randomize data
-            </button>
-            <button
-              type="button"
-              onClick={reset}
-              className="rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-            >
-              Reset baseline
-            </button>
             <button
               type="button"
               disabled
@@ -139,8 +165,7 @@ export function QuarterDashboardPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setModuleId(mod.moduleId);
-                        setSubId(defaultSubForModule(mod.moduleId));
+                        selectWorkspaceView(mod.moduleId, defaultSubForModule(mod.moduleId));
                       }}
                       className={[
                         "flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-semibold transition-colors",
@@ -159,8 +184,7 @@ export function QuarterDashboardPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setModuleId(mod.moduleId);
-                                  setSubId(s.subId);
+                                  selectWorkspaceView(mod.moduleId, s.subId);
                                 }}
                                 className={[
                                   "w-full border-l-2 py-2 pr-2 pl-4 text-left text-xs transition-colors",

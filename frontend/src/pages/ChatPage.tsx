@@ -1,15 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { TopNav } from "../components/TopNav";
+import { useChatCoach, type ChatMessage } from "../context/ChatCoachContext";
 import { useDemoData } from "../context/DemoDataContext";
-
-type Role = "user" | "assistant";
-
-type Message = {
-  id: string;
-  role: Role;
-  content: string;
-};
+import { buildCitationHref, resolveCitationDestination } from "../workspace/citationLinks";
 
 type FormattedBlock =
   | {
@@ -20,15 +14,6 @@ type FormattedBlock =
       kind: "bullets" | "numbered";
       lines: string[];
     };
-
-const SEED: Message[] = [
-  {
-    id: "s1",
-    role: "assistant",
-    content:
-      'Ask about this quarter, your biggest risks, or the tradeoffs behind a decision. I’ll keep it short and use the current snapshot.',
-  },
-];
 
 function cleanMessageContent(content: string): string {
   return content
@@ -91,6 +76,65 @@ function parseMessageBlocks(content: string): FormattedBlock[] {
   return blocks;
 }
 
+type InlinePart =
+  | { kind: "text"; text: string }
+  | { kind: "citation"; id: string };
+
+function parseInlineParts(text: string): InlinePart[] {
+  const parts: InlinePart[] = [];
+  const regex = /\[([^[\]]+)\]/g;
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(regex)) {
+    const start = match.index ?? 0;
+    if (start > lastIndex) {
+      parts.push({ kind: "text", text: text.slice(lastIndex, start) });
+    }
+    parts.push({ kind: "citation", id: match[1].trim() });
+    lastIndex = start + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push({ kind: "text", text: text.slice(lastIndex) });
+  }
+
+  return parts.length > 0 ? parts : [{ kind: "text", text }];
+}
+
+function InlineRichText({ text }: { text: string }) {
+  const parts = parseInlineParts(text);
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.kind === "text") {
+          return <span key={index}>{part.text}</span>;
+        }
+
+        const destination = resolveCitationDestination(part.id);
+        if (!destination) {
+          return (
+            <span key={index} className="font-medium text-slate-500">
+              [{part.id}]
+            </span>
+          );
+        }
+
+        return (
+          <Link
+            key={index}
+            to={buildCitationHref(part.id)}
+            title={`${destination.title} (${part.id})`}
+            className="rounded-md bg-sky-50 px-1.5 py-0.5 font-medium text-[#0D50AC] underline decoration-[#0D50AC]/35 underline-offset-2 transition hover:bg-sky-100"
+          >
+            [{destination.label}]
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
 function ThinkingDots({ light = false }: { light?: boolean }) {
   return (
     <span className="inline-flex items-center gap-1" aria-hidden>
@@ -115,7 +159,7 @@ function AssistantBody({ content }: { content: string }) {
         if (block.kind === "paragraph") {
           return (
             <p key={index} className="text-[0.95rem] leading-7 text-slate-800">
-              {block.lines.join(" ")}
+              <InlineRichText text={block.lines.join(" ")} />
             </p>
           );
         }
@@ -129,7 +173,9 @@ function AssistantBody({ content }: { content: string }) {
         return (
           <ListTag key={index} className={listClass}>
             {block.lines.map((line, itemIndex) => (
-              <li key={itemIndex}>{line}</li>
+              <li key={itemIndex}>
+                <InlineRichText text={line} />
+              </li>
             ))}
           </ListTag>
         );
@@ -166,10 +212,8 @@ function CoachAvatar() {
 }
 
 export function ChatPage() {
-  const { snapshot: d, randomize, reset } = useDemoData();
-  const [messages, setMessages] = useState<Message[]>(SEED);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { snapshot: d } = useDemoData();
+  const { messages, setMessages, input, setInput, loading, setLoading } = useChatCoach();
   const [showIndex, setShowIndex] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -181,7 +225,7 @@ export function ChatPage() {
     const text = input.trim();
     if (!text || loading) return;
     const uid = `u-${crypto.randomUUID()}`;
-    const userMessage: Message = { id: uid, role: "user", content: text };
+    const userMessage: ChatMessage = { id: uid, role: "user", content: text };
     const history = [...messages, userMessage];
     setInput("");
     setMessages(history);
@@ -239,39 +283,15 @@ export function ChatPage() {
         <TopNav />
 
         <div className="border-b border-white/45 bg-white/50 px-4 py-3 backdrop-blur-md sm:px-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#0B6381]">Current context</p>
-              <p className="mt-0.5 text-sm text-slate-800">
-                <span className="font-semibold">{d.quarter.label}</span>
-                <span className="text-slate-400"> · </span>
-                <span>{d.company.name}</span>
-                <span className="text-slate-400"> · </span>
-                <span className="text-slate-600">demo snapshot</span>
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={randomize}
-                className="rounded-2xl border border-[#0B6381] bg-[#0B6381] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0c7394] sm:text-sm"
-              >
-                New scenario
-              </button>
-              <button
-                type="button"
-                onClick={reset}
-                className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:text-sm"
-              >
-                Reset
-              </button>
-              <Link
-                to="/workspace"
-                className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-[#0B6381]/25 bg-[#0B6381]/10 px-4 py-2.5 text-sm font-semibold text-[#0B6381] shadow-sm transition hover:bg-[#0B6381]/15"
-              >
-                Open workspace →
-              </Link>
-            </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#0B6381]">Current context</p>
+            <p className="mt-0.5 text-sm text-slate-800">
+              <span className="font-semibold">{d.quarter.label}</span>
+              <span className="text-slate-400"> · </span>
+              <span>{d.company.name}</span>
+              <span className="text-slate-400"> · </span>
+              <span className="text-slate-600">demo snapshot</span>
+            </p>
           </div>
 
           <div className="mt-3 rounded-2xl border border-white/60 bg-white/60 p-3 backdrop-blur-sm">
@@ -287,7 +307,13 @@ export function ChatPage() {
               <ul className="mt-2 space-y-2 border-t border-white/50 pt-2 text-xs text-slate-600">
                 {d.knowledgeIndex.map((k) => (
                   <li key={k.id} className="leading-snug">
-                    <span className="font-mono text-[10px] text-slate-500">{k.id}</span>
+                    <Link
+                      to={buildCitationHref(k.id)}
+                      className="font-mono text-[10px] text-[#0D50AC] underline decoration-[#0D50AC]/35 underline-offset-2"
+                      title={resolveCitationDestination(k.id)?.title ?? k.section}
+                    >
+                      {k.id}
+                    </Link>
                     <span className="mx-1.5 text-slate-300">·</span>
                     <span className="font-medium text-slate-700">{k.section}:</span> {k.fact}
                   </li>
