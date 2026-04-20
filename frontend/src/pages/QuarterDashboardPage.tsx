@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { TopNav } from "../components/TopNav";
 import { useDemoData } from "../context/DemoDataContext";
@@ -82,6 +82,14 @@ export function QuarterDashboardPage() {
     next.set("module", nextModuleId);
     next.set("sub", nextSubId);
     setSearchParams(next);
+  };
+
+  const [expandedModules, setExpandedModules] = useState<Record<ModuleId, boolean>>(
+    () => Object.fromEntries(WORKSPACE_NAV.map((m) => [m.moduleId, true])) as Record<ModuleId, boolean>,
+  );
+
+  const toggleModuleExpanded = (id: ModuleId) => {
+    setExpandedModules((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   return (
@@ -188,26 +196,43 @@ export function QuarterDashboardPage() {
             </div>
             <div className="max-h-[40vh] overflow-y-auto md:max-h-none md:flex-1">
               {WORKSPACE_NAV.map((mod) => {
-                const open = mod.moduleId === moduleId;
+                const isActiveModule = mod.moduleId === moduleId;
+                const expanded = expandedModules[mod.moduleId] ?? true;
                 return (
-                  <div key={mod.moduleId} className="border-b border-white/5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        selectWorkspaceView(mod.moduleId, defaultSubForModule(mod.moduleId));
-                      }}
-                      className={[
-                        "flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-semibold transition-colors",
-                        open ? "bg-[#0B6381] text-white" : "text-white/90 hover:bg-white/10",
-                      ].join(" ")}
-                    >
-                      <span>{mod.label}</span>
-                                           <span className="text-[10px] opacity-70">{open ? "▼" : ">"}</span>
-                    </button>
-                    {open && (
-                      <ul className="bg-black/20 py-1" role="list">
+                  <div
+                    key={mod.moduleId}
+                    className="mx-2 my-2.5 rounded-lg border border-white/35 bg-[#0c5468] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] first:mt-2"
+                  >
+                    <div className="flex items-stretch gap-0.5 rounded-md bg-[#0B6381]/40">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          selectWorkspaceView(mod.moduleId, defaultSubForModule(mod.moduleId));
+                        }}
+                        className={[
+                          "min-w-0 flex-1 px-2.5 py-2.5 text-left text-sm font-semibold transition-colors",
+                          isActiveModule ? "text-white" : "text-white/90 hover:bg-white/10",
+                        ].join(" ")}
+                      >
+                        {mod.label}
+                      </button>
+                      <button
+                        type="button"
+                        aria-expanded={expanded}
+                        aria-label={expanded ? `Collapse ${mod.label}` : `Expand ${mod.label}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toggleModuleExpanded(mod.moduleId);
+                        }}
+                        className="shrink-0 rounded-md px-2.5 text-sm text-white/85 transition hover:bg-white/15"
+                      >
+                        {expanded ? "▼" : "▶"}
+                      </button>
+                    </div>
+                    {expanded && (
+                      <ul className="mt-1.5 space-y-1.5 pb-0.5 pt-1" role="list">
                         {mod.subs.map((s) => {
-                          const subOn = s.subId === subId;
+                          const subOn = s.subId === subId && isActiveModule;
                           return (
                             <li key={s.subId}>
                               <button
@@ -216,10 +241,10 @@ export function QuarterDashboardPage() {
                                   selectWorkspaceView(mod.moduleId, s.subId);
                                 }}
                                 className={[
-                                  "w-full border-l-2 py-2 pr-2 pl-4 text-left text-xs transition-colors",
+                                  "w-full rounded-md border px-2.5 py-2 text-left text-xs transition-colors",
                                   subOn
-                                    ? "border-amber-300 bg-white/95 font-semibold text-[#0B6381]"
-                                    : "border-transparent text-white/85 hover:bg-white/10",
+                                    ? "border-amber-300/90 bg-white font-semibold text-[#0B6381] shadow-sm"
+                                    : "border-white/25 bg-white/[0.07] text-white/90 hover:border-white/40 hover:bg-white/[0.12]",
                                 ].join(" ")}
                               >
                                 {s.label}
