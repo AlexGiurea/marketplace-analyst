@@ -197,15 +197,15 @@ export function QuarterDashboardPage() {
 
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           {/* Compact module rail + contextual sub-panel (saves vertical space vs full accordion tree) */}
-          <aside className="flex w-full shrink-0 flex-col border-b border-slate-200/80 bg-gradient-to-b from-[#0b4558] via-[#083949] to-[#062f3f] md:min-h-0 md:w-[304px] md:shrink-0 md:border-b-0 md:border-r md:border-slate-200/80">
-            <div className="border-b border-white/[0.07] px-3 py-2.5 md:px-4 md:py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Contents</p>
-              <p className="mt-0.5 text-xs font-medium leading-snug text-white/70">Modules · then pages</p>
+          <aside className="flex w-full shrink-0 flex-col border-b border-slate-200/80 bg-gradient-to-b from-[#0b4558] via-[#083949] to-[#062f3f] md:min-h-0 md:w-[400px] md:shrink-0 md:border-b-0 md:border-r md:border-slate-200/80 lg:w-[420px]">
+            <div className="border-b border-white/[0.07] px-4 py-4 md:px-5 md:py-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">Contents</p>
+              <p className="mt-1 text-sm font-semibold leading-snug text-white/90 md:text-[0.95rem]">Modules · then pages</p>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+            <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(520px,calc(100dvh-14rem))] md:flex-row">
               <nav
-                className="flex shrink-0 gap-1 overflow-x-auto border-b border-white/[0.08] px-2 py-2 [-ms-overflow-style:none] [scrollbar-width:none] md:w-[118px] md:flex-col md:gap-0.5 md:overflow-y-auto md:border-b-0 md:border-r md:border-white/[0.08] md:px-2 md:py-2 [&::-webkit-scrollbar]:hidden"
+                className="flex shrink-0 gap-2 overflow-x-auto border-b border-white/[0.08] px-3 py-3 [-ms-overflow-style:none] [scrollbar-width:none] md:w-[158px] md:flex-col md:gap-2 md:overflow-y-auto md:border-b-0 md:border-r md:border-white/[0.08] md:px-3 md:py-4 [&::-webkit-scrollbar]:hidden"
                 aria-label="Workspace modules"
               >
                 {WORKSPACE_NAV.map((mod) => {
@@ -217,25 +217,25 @@ export function QuarterDashboardPage() {
                       title={mod.label}
                       onClick={() => selectWorkspaceView(mod.moduleId, defaultSubForModule(mod.moduleId))}
                       className={[
-                        "shrink-0 rounded-lg px-2.5 py-2 text-left text-[11px] font-semibold leading-snug transition-colors md:w-full md:px-2 md:py-2 md:text-[11px]",
+                        "shrink-0 rounded-xl px-3.5 py-3 text-left text-[13px] font-semibold leading-snug transition-colors md:w-full md:px-3 md:py-3.5 md:text-[13px]",
                         isActiveModule
-                          ? "bg-white/18 text-white ring-1 ring-white/25"
-                          : "text-white/75 hover:bg-white/10 hover:text-white",
+                          ? "bg-white/18 text-white ring-1 ring-white/30 shadow-sm"
+                          : "text-white/78 hover:bg-white/10 hover:text-white",
                       ].join(" ")}
                     >
                       <span className="md:hidden">{mod.short}</span>
-                      <span className="hidden md:block md:line-clamp-4 md:leading-snug">{mod.label}</span>
+                      <span className="hidden md:block md:line-clamp-5 md:leading-snug">{mod.label}</span>
                     </button>
                   );
                 })}
               </nav>
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2.5 md:min-w-0 md:px-3 md:py-3">
+              <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 md:min-w-0 md:px-4 md:py-5">
                 {activeModule && (
                   <>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/45">In this module</p>
-                    <p className="mt-1 text-[13px] font-semibold leading-snug text-white/95">{activeModule.label}</p>
-                    <ul className="mt-2 space-y-0.5" role="list">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/50">In this module</p>
+                    <p className="mt-1.5 text-base font-semibold leading-snug text-white md:text-[1.05rem]">{activeModule.label}</p>
+                    <ul className="mt-4 space-y-1.5" role="list">
                       {activeModule.subs.map((s) => {
                         const subOn = s.subId === subId;
                         return (
@@ -244,10 +244,10 @@ export function QuarterDashboardPage() {
                               type="button"
                               onClick={() => selectWorkspaceView(activeModule.moduleId, s.subId)}
                               className={[
-                                "w-full rounded-lg border border-transparent px-2 py-1.5 text-left text-[12px] leading-snug transition-all",
+                                "w-full rounded-xl border border-transparent px-3 py-3 text-left text-[13px] font-medium leading-snug transition-all md:text-[0.9375rem]",
                                 subOn
-                                  ? "border-white/25 bg-white font-semibold text-slate-900 shadow-sm"
-                                  : "text-white/78 hover:border-white/12 hover:bg-white/[0.06] hover:text-white",
+                                  ? "border-white/25 bg-white font-semibold text-slate-900 shadow-md"
+                                  : "text-white/80 hover:border-white/15 hover:bg-white/[0.08] hover:text-white",
                               ].join(" ")}
                             >
                               {s.label}
@@ -261,9 +261,9 @@ export function QuarterDashboardPage() {
               </div>
             </div>
 
-            <div className="hidden border-t border-white/[0.07] p-3.5 text-[10px] leading-relaxed text-white/55 md:block">
-              <p className="font-semibold uppercase tracking-wide text-white/65">RAG-ready snapshot</p>
-              <p className="mt-1.5 text-white/55">
+            <div className="hidden border-t border-white/[0.07] p-4 text-[11px] leading-relaxed text-white/60 md:block md:p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-white/70">RAG-ready snapshot</p>
+              <p className="mt-2 text-white/60">
                 Rail picks the module; the panel lists only that module’s pages—less scrolling than a full expanded tree.
               </p>
             </div>
