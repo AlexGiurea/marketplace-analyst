@@ -37,6 +37,154 @@
   select:disabled {
     cursor: not-allowed;
   }
+
+  button:not(:disabled) {
+    @apply transition-[transform,box-shadow,background-color,border-color,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)];
+  }
+}
+
+/* Glass + motion primitives (Chat + Workspace) */
+@layer components {
+  .ui-btn-primary {
+    @apply cursor-pointer border border-white/35 font-semibold text-white shadow-[0_10px_32px_-12px_rgba(13,80,172,0.55)] backdrop-blur-md;
+    background: linear-gradient(145deg, rgba(13, 80, 172, 0.94), rgba(13, 80, 172, 0.82));
+  }
+  .ui-btn-primary:hover:not(:disabled) {
+    @apply -translate-y-0.5 border-white/50 shadow-[0_16px_40px_-14px_rgba(13,80,172,0.65)];
+    background: linear-gradient(145deg, rgb(13, 80, 172), rgb(11, 68, 150));
+  }
+  .ui-btn-primary:active:not(:disabled) {
+    @apply translate-y-0 scale-[0.99];
+  }
+  .ui-btn-primary:focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-[#0D50AC]/80;
+  }
+
+  .ui-btn-light {
+    @apply cursor-pointer border border-white/55 bg-white/45 font-semibold text-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_6px_24px_-10px_rgba(15,23,42,0.12)] backdrop-blur-xl;
+  }
+  .ui-btn-light:hover:not(:disabled) {
+    @apply -translate-y-0.5 border-white/75 bg-white/70 shadow-[0_10px_28px_-12px_rgba(15,23,42,0.18)];
+  }
+  .ui-btn-light:active:not(:disabled) {
+    @apply translate-y-0 scale-[0.99];
+  }
+
+  .ui-btn-dark {
+    @apply cursor-pointer border border-white/18 bg-white/12 font-semibold text-white shadow-[0_4px_20px_-8px_rgba(0,0,0,0.45)] backdrop-blur-md;
+  }
+  .ui-btn-dark:hover:not(:disabled) {
+    @apply -translate-y-px border-white/28 bg-white/18;
+  }
+  .ui-btn-dark:active:not(:disabled) {
+    @apply translate-y-0 scale-[0.99];
+  }
+
+  .ui-btn-dark-active {
+    @apply border-white/40 bg-white/22 text-white ring-1 ring-white/25 shadow-[0_8px_28px_-10px_rgba(0,0,0,0.35)] backdrop-blur-md;
+  }
+
+  .ui-btn-sub-active {
+    @apply cursor-pointer border border-white/45 bg-white/95 font-semibold text-slate-900 shadow-[0_10px_32px_-14px_rgba(0,0,0,0.28)] backdrop-blur-md;
+  }
+
+  .ui-btn-disabled {
+    @apply cursor-not-allowed border border-slate-300/80 bg-slate-100/90 font-semibold text-slate-500 opacity-70 backdrop-blur-sm;
+  }
+
+  .animate-page-shell {
+    animation: page-shell-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-workspace-main {
+    animation: workspace-main-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-panel-rise {
+    animation: panel-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-chat-strip {
+    animation: chat-strip-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .stagger-chat-1 {
+    animation: chat-strip-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 60ms both;
+  }
+  .stagger-chat-2 {
+    animation: chat-strip-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 100ms both;
+  }
+  .stagger-chat-3 {
+    animation: chat-strip-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 140ms both;
+  }
+  .stagger-chat-4 {
+    animation: chat-strip-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
+  }
+
+  .stagger-list-in {
+    animation: workspace-main-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-shell,
+  .animate-workspace-main,
+  .animate-panel-rise,
+  .animate-chat-strip,
+  .stagger-chat-1,
+  .stagger-chat-2,
+  .stagger-chat-3,
+  .stagger-chat-4,
+  .stagger-list-in,
+  .message-animate {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+@keyframes page-shell-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.988);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes workspace-main-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes panel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes chat-strip-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Message list: fade + slide */

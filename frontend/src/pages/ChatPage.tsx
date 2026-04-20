@@ -259,21 +259,21 @@ export function ChatPage() {
 
   return (
     <div className="min-h-dvh bg-gradient-to-br from-sky-100/90 via-[#e8f4f7] to-[#c5dfe8] px-3 py-6 sm:px-6">
-      <div className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/55 border-l-[5px] border-l-[#0B6381] bg-white/25 shadow-[0_24px_80px_-12px_rgba(11,99,129,0.25)] backdrop-blur-xl">
+      <div className="animate-page-shell mx-auto flex min-h-[calc(100dvh-3rem)] max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/55 border-l-[5px] border-l-[#0B6381] bg-white/25 shadow-[0_24px_80px_-12px_rgba(11,99,129,0.25)] backdrop-blur-xl">
         <TopNav />
 
-        <div className="flex flex-wrap items-center justify-end gap-2 border-b border-white/45 bg-white/40 px-4 py-2.5 backdrop-blur-md sm:px-5">
+        <div className="stagger-chat-1 flex flex-wrap items-center justify-end gap-2 border-b border-white/45 bg-white/40 px-4 py-2.5 backdrop-blur-xl sm:px-5">
           <button
             type="button"
             onClick={startNewScenario}
-            className="rounded-xl bg-[#0D50AC] px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-[#0c4590] hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0D50AC]"
+            className="ui-btn-primary rounded-xl px-4 py-2.5 text-sm"
             title="New demo numbers and a fresh coach conversation"
           >
             New scenario
           </button>
         </div>
 
-        <div className="border-b border-white/45 bg-white/50 px-4 py-3 backdrop-blur-md sm:px-5">
+        <div className="stagger-chat-2 border-b border-white/45 bg-white/50 px-4 py-3 backdrop-blur-xl sm:px-5">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-[#0B6381]">Current context</p>
             <p className="mt-0.5 text-sm text-slate-800">
@@ -285,11 +285,11 @@ export function ChatPage() {
             </p>
           </div>
 
-          <div className="mt-3 rounded-2xl border border-white/60 bg-white/60 p-3 backdrop-blur-sm">
+          <div className="mt-3 rounded-2xl border border-white/55 bg-white/50 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur-xl">
             <button
               type="button"
               onClick={() => setShowIndex((v) => !v)}
-              className="flex w-full items-center justify-between text-left text-xs font-semibold text-slate-700"
+              className="ui-btn-light flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-xs"
             >
               <span>Source notes</span>
               <span className="text-[#0D50AC]">{showIndex ? "Hide" : "Show"}</span>
@@ -314,7 +314,7 @@ export function ChatPage() {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-3 border-b border-white/35 bg-[#C4D4DB]/50 px-4 py-2 backdrop-blur-sm sm:px-5">
+        <div className="stagger-chat-3 flex shrink-0 items-center gap-3 border-b border-white/35 bg-[#C4D4DB]/45 px-4 py-2.5 backdrop-blur-xl sm:px-5">
           <CoachAvatar />
           <div className="min-w-0 pr-1">
             <p className="text-xs font-semibold text-[#0B6381] sm:text-sm">AI Coach</p>
@@ -326,7 +326,7 @@ export function ChatPage() {
 
         <div
           ref={listRef}
-          className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-white/90 px-3 py-5 sm:px-6"
+          className="stagger-list-in min-h-0 flex-1 space-y-4 overflow-y-auto bg-white/88 px-3 py-5 backdrop-blur-[2px] sm:px-6"
         >
           {messages.map((m, i) => (
             <div
@@ -368,7 +368,7 @@ export function ChatPage() {
           )}
         </div>
 
-        <footer className="shrink-0 border-t border-white/50 bg-white/55 px-3 py-4 backdrop-blur-md sm:px-5">
+        <footer className="stagger-chat-4 shrink-0 border-t border-white/50 bg-white/50 px-3 py-4 backdrop-blur-xl sm:px-5">
           <div className="flex gap-2 sm:gap-3">
             <input
               type="text"
@@ -382,15 +382,14 @@ export function ChatPage() {
               }}
               disabled={loading}
               placeholder="Ask about results, risks, or next steps…"
-              className="min-w-0 flex-1 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 text-[0.9375rem] text-slate-800 shadow-inner outline-none ring-[#0D50AC]/0 transition-[box-shadow,ring] duration-200 placeholder:text-slate-400 focus:border-[#0D50AC]/35 focus:bg-white focus:ring-4 focus:ring-[#0D50AC]/18 disabled:opacity-60"
+              className="min-w-0 flex-1 rounded-2xl border border-white/65 bg-white/80 px-4 py-3 text-[0.9375rem] text-slate-800 shadow-inner outline-none ring-[#0D50AC]/0 backdrop-blur-md transition-[box-shadow,ring,transform] duration-300 placeholder:text-slate-400 focus:border-[#0D50AC]/40 focus:bg-white focus:ring-4 focus:ring-[#0D50AC]/20 disabled:opacity-60"
               aria-label="Message"
             />
             <button
               type="button"
               onClick={() => void send()}
               disabled={loading}
-              className="shrink-0 rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-md transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-md disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-              style={{ backgroundColor: "#0D50AC" }}
+              className="ui-btn-primary shrink-0 rounded-2xl px-5 py-3 text-sm disabled:hover:translate-y-0"
             >
               {loading ? (
                 <span className="inline-flex items-center gap-2">

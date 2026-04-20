@@ -15,8 +15,11 @@ function slugify(value: string): string {
 
 function PanelCard({ title, children, sectionId }: { title: string; children: ReactNode; sectionId?: string }) {
   return (
-    <section id={sectionId} className="scroll-mt-24 rounded-lg border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5">
-      <h3 className="border-b border-slate-100 pb-2 text-sm font-semibold text-slate-900">{title}</h3>
+    <section
+      id={sectionId}
+      className="animate-panel-rise scroll-mt-24 rounded-xl border border-slate-200/80 bg-white/95 p-4 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.15)] backdrop-blur-[2px] transition-[box-shadow,transform] duration-300 hover:-translate-y-px hover:shadow-[0_14px_44px_-16px_rgba(15,23,42,0.18)] motion-reduce:hover:translate-y-0 sm:p-5"
+    >
+      <h3 className="border-b border-slate-100/90 pb-2 text-sm font-semibold text-slate-900">{title}</h3>
       <div className="mt-3">{children}</div>
     </section>
   );

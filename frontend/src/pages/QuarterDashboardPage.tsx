@@ -93,7 +93,7 @@ export function QuarterDashboardPage() {
 
   return (
     <div className="min-h-dvh bg-[#d8e4e8] px-0 py-0 sm:px-4 sm:py-5">
-      <div className="mx-auto flex min-h-dvh max-w-[1400px] flex-col overflow-hidden border-x border-slate-300/60 bg-[#eef3f5] shadow-xl sm:min-h-[calc(100dvh-2.5rem)] sm:rounded-lg">
+      <div className="animate-page-shell mx-auto flex min-h-dvh max-w-[1400px] flex-col overflow-hidden border-x border-slate-300/60 bg-[#eef3f5] shadow-xl sm:min-h-[calc(100dvh-2.5rem)] sm:rounded-lg">
         {/* App chrome — matches student-facing sim + our AI demo nav */}
         <div className="shrink-0 border-b border-slate-300/80 bg-white">
           <TopNav />
@@ -116,7 +116,7 @@ export function QuarterDashboardPage() {
             <button
               type="button"
               onClick={startNewScenario}
-              className="rounded-lg bg-[#0D50AC] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0c4590] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0D50AC]"
+              className="ui-btn-primary rounded-lg px-3 py-2 text-xs"
               title="New demo numbers and a fresh coach conversation"
             >
               New scenario
@@ -124,7 +124,7 @@ export function QuarterDashboardPage() {
             <label className="flex items-center gap-1.5 text-slate-700">
               <span className="hidden sm:inline">Quarter</span>
               <select
-                className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-900 shadow-sm"
+                className="rounded-lg border border-slate-300/90 bg-white/90 px-2.5 py-1.5 text-xs font-medium text-slate-900 shadow-sm backdrop-blur-sm transition hover:border-slate-400/90 hover:shadow-md"
                 value={activeQuarterIndex + 1}
                 onChange={(e) => {
                   const n = parseInt(e.target.value, 10);
@@ -145,7 +145,7 @@ export function QuarterDashboardPage() {
             <button
               type="button"
               disabled
-              className="cursor-not-allowed rounded border border-slate-300 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500"
+              className="ui-btn-disabled rounded-lg px-2.5 py-1.5 text-xs"
               title="Demo only — submit flow not wired"
             >
               Wrap up / Submit
@@ -217,10 +217,8 @@ export function QuarterDashboardPage() {
                       title={mod.label}
                       onClick={() => selectWorkspaceView(mod.moduleId, defaultSubForModule(mod.moduleId))}
                       className={[
-                        "shrink-0 rounded-xl px-3.5 py-3 text-left text-[13px] font-semibold leading-snug transition-colors md:w-full md:px-3 md:py-3.5 md:text-[13px]",
-                        isActiveModule
-                          ? "bg-white/18 text-white ring-1 ring-white/30 shadow-sm"
-                          : "text-white/78 hover:bg-white/10 hover:text-white",
+                        "shrink-0 rounded-xl px-3.5 py-3 text-left text-[13px] leading-snug md:w-full md:px-3 md:py-3.5 md:text-[13px]",
+                        isActiveModule ? "ui-btn-dark-active font-semibold text-white" : "ui-btn-dark text-white/88",
                       ].join(" ")}
                     >
                       <span className="md:hidden">{mod.short}</span>
@@ -244,10 +242,8 @@ export function QuarterDashboardPage() {
                               type="button"
                               onClick={() => selectWorkspaceView(activeModule.moduleId, s.subId)}
                               className={[
-                                "w-full rounded-xl border border-transparent px-3 py-3 text-left text-[13px] font-medium leading-snug transition-all md:text-[0.9375rem]",
-                                subOn
-                                  ? "border-white/25 bg-white font-semibold text-slate-900 shadow-md"
-                                  : "text-white/80 hover:border-white/15 hover:bg-white/[0.08] hover:text-white",
+                                "w-full rounded-xl px-3 py-3 text-left text-[13px] font-medium leading-snug md:text-[0.9375rem]",
+                                subOn ? "ui-btn-sub-active" : "ui-btn-dark text-white/85",
                               ].join(" ")}
                             >
                               {s.label}
@@ -270,8 +266,11 @@ export function QuarterDashboardPage() {
           </aside>
 
           <main className="min-h-0 flex-1 overflow-y-auto bg-[#e8eef1] p-3 sm:p-5">
-            <div className="mx-auto max-w-4xl space-y-4 pb-16 animate-[msg-in_0.3s_ease-out_both]">
-              <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div
+              key={`${moduleId}-${subId}`}
+              className="animate-workspace-main mx-auto max-w-4xl space-y-4 pb-16"
+            >
+              <div className="rounded-xl border border-slate-200/90 bg-white/95 px-4 py-3 shadow-[0_8px_30px_-16px_rgba(15,23,42,0.12)] backdrop-blur-sm">
                 <h2 className="text-sm font-bold text-slate-900">{activeSubLabel}</h2>
                 <p className="text-xs text-slate-500">
                   {activeModule?.label} · {d.company.targetSegments.join(", ")} segments targeted
