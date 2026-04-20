@@ -2,7 +2,7 @@
 
 **Live demo:** [https://marketplace-analyst.vercel.app](https://marketplace-analyst.vercel.app) · **Source:** [github.com/AlexGiurea/marketplace-analyst](https://github.com/AlexGiurea/marketplace-analyst)
 
-**Marketplace Analyst** is a demonstration web app that pairs a **Marketplace®-style business simulation** (bikes strategy course context) with an **AI coach**. The coach answers in plain language while staying **grounded in the current quarter’s snapshot**: KPIs, brands, competitors, manufacturing, finance, and scorecard themes are compiled into retrievable text chunks; the model may call **tools** to pull exact figures from the live `DemoSnapshot` so it does not invent numbers.
+**Marketplace Analyst** is a demonstration web app that pairs a **Marketplace®-style business simulation** (bikes strategy course context) with an **AI coach**. The coach answers in plain language while staying **grounded in the current quarter’s snapshot**: KPIs, brands, competitors, manufacturing, finance, and scorecard themes are compiled into retrievable text chunks; the model may call **tools** to pull exact figures from the live `DemoSnapshot` so it does not invent numbers. It is designed as **decision support**, not as a decision maker for the student.
 
 > **Disclaimer:** The UI and data are **fictional** and recreated for a student innovation pitch. Not affiliated with Marketplace® or ILS.
 
@@ -10,7 +10,7 @@
 
 ## Purpose
 
-- **Teaching / pitch:** Help learners explore **tradeoffs** (volume vs margin, capacity vs demand, share vs profitability) using **their current scenario data**.
+- **Teaching / pitch:** Help learners explore **tradeoffs** (volume vs margin, capacity vs demand, share vs profitability) using **their current scenario data**, without outsourcing judgment or final decisions.
 - **Trustworthy answers:** The server **compiles** structured snapshot fields into knowledge text, runs **lexical retrieval** on the user question, and uses the **OpenAI Responses API** with **function tools** backed by the real snapshot.
 - **Single local URL:** In development, one Node process serves **Vite + `/api`** on one port (default `5173`, or `PORT` from `server/.env`).
 

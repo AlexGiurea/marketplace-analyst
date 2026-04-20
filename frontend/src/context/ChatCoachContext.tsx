@@ -28,7 +28,7 @@ const CHAT_SEED: ChatMessage[] = [
     id: "s1",
     role: "assistant",
     content:
-      "Ask about this quarter, compare to earlier quarters, or weigh tradeoffs. I’ll stay short and use the demo data you have loaded (including past quarters when relevant).",
+      "Ask about this quarter, compare earlier quarters, or weigh tradeoffs. I’ll stay short, use the demo data you have loaded, and help you evaluate options without making the decision for you.",
   },
 ];
 

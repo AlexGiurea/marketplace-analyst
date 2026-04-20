@@ -1,12 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { TopNav } from "../components/TopNav";
+import { useChatCoach } from "../context/ChatCoachContext";
 import { useDemoData } from "../context/DemoDataContext";
 import { defaultSubForModule, WORKSPACE_NAV, type ModuleId } from "../workspace/navConfig";
 import { WorkspacePanels } from "../workspace/WorkspacePanels";
 
+function NavChevron({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      className={`h-3.5 w-3.5 shrink-0 text-white/55 transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`}
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path
+        fillRule="evenodd"
+        d="M5.22 8.22a.75.75 0 011.06 0L10 11.94l3.72-3.72a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.22 9.28a.75.75 0 010-1.06z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
 export function QuarterDashboardPage() {
-  const { snapshot: d, scenario, activeQuarterIndex, setActiveQuarterIndex } = useDemoData();
+  const { snapshot: d, scenario, activeQuarterIndex, setActiveQuarterIndex, randomize } = useDemoData();
+  const { resetChat } = useChatCoach();
+
+  function startNewScenario() {
+    randomize();
+    resetChat();
+  }
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
 
@@ -114,6 +138,14 @@ export function QuarterDashboardPage() {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={startNewScenario}
+              className="rounded-lg bg-[#0D50AC] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0c4590] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0D50AC]"
+              title="New demo numbers and a fresh coach conversation"
+            >
+              New scenario
+            </button>
             <label className="flex items-center gap-1.5 text-slate-700">
               <span className="hidden sm:inline">Quarter</span>
               <select
@@ -190,28 +222,32 @@ export function QuarterDashboardPage() {
 
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           {/* Primary + secondary nav — resembles left-hand module tree in student walkthroughs */}
-          <aside className="flex w-full shrink-0 flex-col border-b border-slate-200 bg-[#0f4a5c] md:w-[268px] md:border-b-0 md:border-r md:border-slate-200">
-            <div className="hidden border-b border-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-white/50 md:block">
-              Quick links
+          <aside className="flex w-full shrink-0 flex-col border-b border-slate-200/80 bg-gradient-to-b from-[#0b4558] via-[#083949] to-[#062f3f] md:w-[288px] md:border-b-0 md:border-r md:border-slate-200/80">
+            <div className="border-b border-white/[0.07] px-3 py-3 md:px-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Contents</p>
+              <p className="mt-0.5 text-xs font-medium leading-snug text-white/70">Workspace modules</p>
             </div>
-            <div className="max-h-[40vh] overflow-y-auto md:max-h-none md:flex-1">
+            <div className="max-h-[40vh] space-y-2 overflow-y-auto px-3 pb-3 pt-2 md:max-h-none md:flex-1 md:px-3.5 md:pb-4">
               {WORKSPACE_NAV.map((mod) => {
                 const isActiveModule = mod.moduleId === moduleId;
                 const expanded = expandedModules[mod.moduleId] ?? true;
                 return (
                   <div
                     key={mod.moduleId}
-                    className="mx-2 my-2.5 rounded-lg border border-white/35 bg-[#0c5468] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] first:mt-2"
+                    className={[
+                      "rounded-xl border border-white/[0.09] bg-white/[0.035] p-0.5 shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] backdrop-blur-[2px]",
+                      isActiveModule ? "ring-1 ring-sky-300/25" : "",
+                    ].join(" ")}
                   >
-                    <div className="flex items-stretch gap-0.5 rounded-md bg-[#0B6381]/40">
+                    <div className="flex items-stretch gap-1 rounded-[10px] bg-black/15">
                       <button
                         type="button"
                         onClick={() => {
                           selectWorkspaceView(mod.moduleId, defaultSubForModule(mod.moduleId));
                         }}
                         className={[
-                          "min-w-0 flex-1 px-2.5 py-2.5 text-left text-sm font-semibold transition-colors",
-                          isActiveModule ? "text-white" : "text-white/90 hover:bg-white/10",
+                          "min-w-0 flex-1 px-3 py-2.5 text-left text-[13px] font-semibold leading-tight tracking-tight transition-colors",
+                          isActiveModule ? "text-white" : "text-white/88 hover:text-white",
                         ].join(" ")}
                       >
                         {mod.label}
@@ -224,13 +260,13 @@ export function QuarterDashboardPage() {
                           e.preventDefault();
                           toggleModuleExpanded(mod.moduleId);
                         }}
-                        className="shrink-0 rounded-md px-2.5 text-sm text-white/85 transition hover:bg-white/15"
+                        className="flex shrink-0 items-center justify-center rounded-lg px-2.5 text-white/70 transition hover:bg-white/10 hover:text-white"
                       >
-                        {expanded ? "▼" : "▶"}
+                        <NavChevron expanded={expanded} />
                       </button>
                     </div>
                     {expanded && (
-                      <ul className="mt-1.5 space-y-1.5 pb-0.5 pt-1" role="list">
+                      <ul className="space-y-0.5 px-1.5 pb-2 pt-1" role="list">
                         {mod.subs.map((s) => {
                           const subOn = s.subId === subId && isActiveModule;
                           return (
@@ -241,10 +277,10 @@ export function QuarterDashboardPage() {
                                   selectWorkspaceView(mod.moduleId, s.subId);
                                 }}
                                 className={[
-                                  "w-full rounded-md border px-2.5 py-2 text-left text-xs transition-colors",
+                                  "w-full rounded-lg border border-transparent px-2.5 py-2 text-left text-[12px] leading-snug transition-all",
                                   subOn
-                                    ? "border-amber-300/90 bg-white font-semibold text-[#0B6381] shadow-sm"
-                                    : "border-white/25 bg-white/[0.07] text-white/90 hover:border-white/40 hover:bg-white/[0.12]",
+                                    ? "border-white/25 bg-white font-semibold text-slate-900 shadow-sm"
+                                    : "text-white/78 hover:border-white/12 hover:bg-white/[0.06] hover:text-white",
                                 ].join(" ")}
                               >
                                 {s.label}
@@ -258,9 +294,9 @@ export function QuarterDashboardPage() {
                 );
               })}
             </div>
-            <div className="hidden p-3 text-[10px] leading-relaxed text-white/70 md:block">
-              <p className="font-semibold text-white/90">RAG-ready snapshot</p>
-              <p className="mt-1">
+            <div className="hidden border-t border-white/[0.07] p-3.5 text-[10px] leading-relaxed text-white/55 md:block">
+              <p className="font-semibold uppercase tracking-wide text-white/65">RAG-ready snapshot</p>
+              <p className="mt-1.5 text-white/55">
                 This tree mirrors common Marketplace workspace areas. The same structured JSON can be chunked for retrieval + tool calls.
               </p>
             </div>

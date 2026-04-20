@@ -174,8 +174,13 @@ function CoachAvatar() {
 }
 
 export function ChatPage() {
-  const { snapshot: d, scenario, activeQuarterIndex } = useDemoData();
-  const { messages, setMessages, input, setInput, loading, setLoading } = useChatCoach();
+  const { snapshot: d, scenario, activeQuarterIndex, randomize } = useDemoData();
+  const { messages, setMessages, input, setInput, loading, setLoading, resetChat } = useChatCoach();
+
+  function startNewScenario() {
+    randomize();
+    resetChat();
+  }
   const [showIndex, setShowIndex] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const currentRenderContext: ChatRenderContext = { snapshot: d, scenario, activeQuarterIndex };
@@ -256,6 +261,17 @@ export function ChatPage() {
     <div className="min-h-dvh bg-gradient-to-br from-sky-100/90 via-[#e8f4f7] to-[#c5dfe8] px-3 py-6 sm:px-6">
       <div className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/55 border-l-[5px] border-l-[#0B6381] bg-white/25 shadow-[0_24px_80px_-12px_rgba(11,99,129,0.25)] backdrop-blur-xl">
         <TopNav />
+
+        <div className="flex flex-wrap items-center justify-end gap-2 border-b border-white/45 bg-white/40 px-4 py-2.5 backdrop-blur-md sm:px-5">
+          <button
+            type="button"
+            onClick={startNewScenario}
+            className="rounded-xl bg-[#0D50AC] px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-[#0c4590] hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0D50AC]"
+            title="New demo numbers and a fresh coach conversation"
+          >
+            New scenario
+          </button>
+        </div>
 
         <div className="border-b border-white/45 bg-white/50 px-4 py-3 backdrop-blur-md sm:px-5">
           <div className="min-w-0">
@@ -387,7 +403,7 @@ export function ChatPage() {
             </button>
           </div>
           <p className="mt-3 text-center text-xs leading-snug text-slate-500/90">
-            Check important numbers before you act.
+            Use the coach to inspect options and evidence, then make the decision yourself.
           </p>
         </footer>
       </div>

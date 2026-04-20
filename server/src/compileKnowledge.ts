@@ -74,6 +74,19 @@ export function compileKnowledge(snapshot: DemoSnapshot): KnowledgeBundle {
     });
   }
 
+  for (const brand of performance.competitorBrands) {
+    chunks.push({
+      id: `competitor-brand-${slugify(`${brand.competitor}-${brand.brandName}`)}`,
+      section: "competitors",
+      text: `Competitor brand ${brand.brandName} from ${brand.competitor} in ${brand.segment}: price ${money(brand.price)}, segment share ${brand.shareInSegmentPct}%.`,
+      metadata: {
+        competitor: brand.competitor,
+        brand: brand.brandName,
+        segment: brand.segment,
+      },
+    });
+  }
+
   for (const row of balancedScorecard) {
     chunks.push({
       id: `scorecard-${slugify(row.theme)}`,
