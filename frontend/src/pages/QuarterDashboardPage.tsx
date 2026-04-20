@@ -1,27 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { TopNav } from "../components/TopNav";
 import { useChatCoach } from "../context/ChatCoachContext";
 import { useDemoData } from "../context/DemoDataContext";
 import { defaultSubForModule, WORKSPACE_NAV, type ModuleId } from "../workspace/navConfig";
 import { WorkspacePanels } from "../workspace/WorkspacePanels";
-
-function NavChevron({ expanded }: { expanded: boolean }) {
-  return (
-    <svg
-      className={`h-3.5 w-3.5 shrink-0 text-white/55 transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`}
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      aria-hidden
-    >
-      <path
-        fillRule="evenodd"
-        d="M5.22 8.22a.75.75 0 011.06 0L10 11.94l3.72-3.72a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.22 9.28a.75.75 0 010-1.06z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-}
 
 export function QuarterDashboardPage() {
   const { snapshot: d, scenario, activeQuarterIndex, setActiveQuarterIndex, randomize } = useDemoData();
@@ -106,14 +89,6 @@ export function QuarterDashboardPage() {
     next.set("module", nextModuleId);
     next.set("sub", nextSubId);
     setSearchParams(next);
-  };
-
-  const [expandedModules, setExpandedModules] = useState<Record<ModuleId, boolean>>(
-    () => Object.fromEntries(WORKSPACE_NAV.map((m) => [m.moduleId, true])) as Record<ModuleId, boolean>,
-  );
-
-  const toggleModuleExpanded = (id: ModuleId) => {
-    setExpandedModules((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   return (
@@ -221,83 +196,75 @@ export function QuarterDashboardPage() {
         </p>
 
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-          {/* Primary + secondary nav — resembles left-hand module tree in student walkthroughs */}
-          <aside className="flex w-full shrink-0 flex-col border-b border-slate-200/80 bg-gradient-to-b from-[#0b4558] via-[#083949] to-[#062f3f] md:w-[288px] md:border-b-0 md:border-r md:border-slate-200/80">
-            <div className="border-b border-white/[0.07] px-3 py-3 md:px-4">
+          {/* Compact module rail + contextual sub-panel (saves vertical space vs full accordion tree) */}
+          <aside className="flex w-full shrink-0 flex-col border-b border-slate-200/80 bg-gradient-to-b from-[#0b4558] via-[#083949] to-[#062f3f] md:min-h-0 md:w-[304px] md:shrink-0 md:border-b-0 md:border-r md:border-slate-200/80">
+            <div className="border-b border-white/[0.07] px-3 py-2.5 md:px-4 md:py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Contents</p>
-              <p className="mt-0.5 text-xs font-medium leading-snug text-white/70">Workspace modules</p>
+              <p className="mt-0.5 text-xs font-medium leading-snug text-white/70">Modules · then pages</p>
             </div>
-            <div className="max-h-[40vh] space-y-2 overflow-y-auto px-3 pb-3 pt-2 md:max-h-none md:flex-1 md:px-3.5 md:pb-4">
-              {WORKSPACE_NAV.map((mod) => {
-                const isActiveModule = mod.moduleId === moduleId;
-                const expanded = expandedModules[mod.moduleId] ?? true;
-                return (
-                  <div
-                    key={mod.moduleId}
-                    className={[
-                      "rounded-xl border border-white/[0.09] bg-white/[0.035] p-0.5 shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] backdrop-blur-[2px]",
-                      isActiveModule ? "ring-1 ring-sky-300/25" : "",
-                    ].join(" ")}
-                  >
-                    <div className="flex items-stretch gap-1 rounded-[10px] bg-black/15">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          selectWorkspaceView(mod.moduleId, defaultSubForModule(mod.moduleId));
-                        }}
-                        className={[
-                          "min-w-0 flex-1 px-3 py-2.5 text-left text-[13px] font-semibold leading-tight tracking-tight transition-colors",
-                          isActiveModule ? "text-white" : "text-white/88 hover:text-white",
-                        ].join(" ")}
-                      >
-                        {mod.label}
-                      </button>
-                      <button
-                        type="button"
-                        aria-expanded={expanded}
-                        aria-label={expanded ? `Collapse ${mod.label}` : `Expand ${mod.label}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          toggleModuleExpanded(mod.moduleId);
-                        }}
-                        className="flex shrink-0 items-center justify-center rounded-lg px-2.5 text-white/70 transition hover:bg-white/10 hover:text-white"
-                      >
-                        <NavChevron expanded={expanded} />
-                      </button>
-                    </div>
-                    {expanded && (
-                      <ul className="space-y-0.5 px-1.5 pb-2 pt-1" role="list">
-                        {mod.subs.map((s) => {
-                          const subOn = s.subId === subId && isActiveModule;
-                          return (
-                            <li key={s.subId}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  selectWorkspaceView(mod.moduleId, s.subId);
-                                }}
-                                className={[
-                                  "w-full rounded-lg border border-transparent px-2.5 py-2 text-left text-[12px] leading-snug transition-all",
-                                  subOn
-                                    ? "border-white/25 bg-white font-semibold text-slate-900 shadow-sm"
-                                    : "text-white/78 hover:border-white/12 hover:bg-white/[0.06] hover:text-white",
-                                ].join(" ")}
-                              >
-                                {s.label}
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
+
+            <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+              <nav
+                className="flex shrink-0 gap-1 overflow-x-auto border-b border-white/[0.08] px-2 py-2 [-ms-overflow-style:none] [scrollbar-width:none] md:w-[118px] md:flex-col md:gap-0.5 md:overflow-y-auto md:border-b-0 md:border-r md:border-white/[0.08] md:px-2 md:py-2 [&::-webkit-scrollbar]:hidden"
+                aria-label="Workspace modules"
+              >
+                {WORKSPACE_NAV.map((mod) => {
+                  const isActiveModule = mod.moduleId === moduleId;
+                  return (
+                    <button
+                      key={mod.moduleId}
+                      type="button"
+                      title={mod.label}
+                      onClick={() => selectWorkspaceView(mod.moduleId, defaultSubForModule(mod.moduleId))}
+                      className={[
+                        "shrink-0 rounded-lg px-2.5 py-2 text-left text-[11px] font-semibold leading-snug transition-colors md:w-full md:px-2 md:py-2 md:text-[11px]",
+                        isActiveModule
+                          ? "bg-white/18 text-white ring-1 ring-white/25"
+                          : "text-white/75 hover:bg-white/10 hover:text-white",
+                      ].join(" ")}
+                    >
+                      <span className="md:hidden">{mod.short}</span>
+                      <span className="hidden md:block md:line-clamp-4 md:leading-snug">{mod.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2.5 md:min-w-0 md:px-3 md:py-3">
+                {activeModule && (
+                  <>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/45">In this module</p>
+                    <p className="mt-1 text-[13px] font-semibold leading-snug text-white/95">{activeModule.label}</p>
+                    <ul className="mt-2 space-y-0.5" role="list">
+                      {activeModule.subs.map((s) => {
+                        const subOn = s.subId === subId;
+                        return (
+                          <li key={s.subId}>
+                            <button
+                              type="button"
+                              onClick={() => selectWorkspaceView(activeModule.moduleId, s.subId)}
+                              className={[
+                                "w-full rounded-lg border border-transparent px-2 py-1.5 text-left text-[12px] leading-snug transition-all",
+                                subOn
+                                  ? "border-white/25 bg-white font-semibold text-slate-900 shadow-sm"
+                                  : "text-white/78 hover:border-white/12 hover:bg-white/[0.06] hover:text-white",
+                              ].join(" ")}
+                            >
+                              {s.label}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
+                )}
+              </div>
             </div>
+
             <div className="hidden border-t border-white/[0.07] p-3.5 text-[10px] leading-relaxed text-white/55 md:block">
               <p className="font-semibold uppercase tracking-wide text-white/65">RAG-ready snapshot</p>
               <p className="mt-1.5 text-white/55">
-                This tree mirrors common Marketplace workspace areas. The same structured JSON can be chunked for retrieval + tool calls.
+                Rail picks the module; the panel lists only that module’s pages—less scrolling than a full expanded tree.
               </p>
             </div>
           </aside>
