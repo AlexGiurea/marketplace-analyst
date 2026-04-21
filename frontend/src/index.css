@@ -130,11 +130,16 @@
   }
 
   .dashboard-chart-card {
-    @apply rounded-2xl border border-slate-200/85 bg-white/92 p-3 shadow-sm backdrop-blur-sm transition-[box-shadow,transform,border-color] duration-300;
+    @apply overflow-visible rounded-2xl border border-slate-200/85 bg-white/92 p-3 shadow-sm backdrop-blur-sm transition-[box-shadow,transform,border-color] duration-300;
   }
 
   .dashboard-chart-card:hover {
     @apply border-slate-300/90 shadow-[0_12px_40px_-18px_rgba(15,23,42,0.12)];
+  }
+
+  /* Prevent SVG axis labels from clipping inside chart cards */
+  .dashboard-chart-plot {
+    @apply min-h-[240px] w-full overflow-visible sm:min-h-[260px];
   }
 
   .dashboard-unified-panel {
@@ -143,6 +148,10 @@
 
   .dashboard-executive {
     @apply rounded-xl border border-slate-200/70 bg-white/90 p-4 shadow-sm sm:p-5;
+  }
+
+  .dashboard-coach-insights {
+    @apply rounded-xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50/95 to-white/90 p-4 shadow-sm sm:p-5;
   }
 
   .dashboard-animate-children > * {

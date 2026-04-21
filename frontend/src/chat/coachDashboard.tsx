@@ -161,7 +161,16 @@ function quarterInsightBullets(snapshot: DemoSnapshot): string[] {
       `Biggest scorecard move: ${mover.theme.replace(/ & /g, " & ")} (${mover.priorScore} → ${mover.score}, ${mover.trend}).`,
     );
   }
-  return bullets.slice(0, 4);
+  const ratio0 = snapshot.accounting.industryRatios[0];
+  if (ratio0) {
+    bullets.push(
+      `Industry check (${ratio0.name}): team ${ratio0.unit === "percent" ? `${ratio0.teamValue}%` : ratio0.teamValue} vs median ${ratio0.unit === "percent" ? `${ratio0.industryMedian}%` : ratio0.industryMedian}.`,
+    );
+  }
+  bullets.push(
+    `Sales productivity index ${snapshot.humanResources.salesProductivityIndex} — ${snapshot.humanResources.headcountNote}`,
+  );
+  return bullets.slice(0, 7);
 }
 
 function projectTrendInsights(
@@ -188,6 +197,63 @@ function projectTrendInsights(
     `Peak revenue quarter in this run: ${q[bestRev.i].quarter.label} at ${shortMoney(bestRev.val)} — compare mix, share, and capacity in the quarter table.`,
   );
   return bullets;
+}
+
+function quarterCoachInsightLines(snapshot: DemoSnapshot): string[] {
+  const ec = snapshot.accounting.endingCash;
+  const bc = snapshot.accounting.beginningCash;
+  const cashDir = ec >= bc ? "improved" : "tightened";
+  return [
+    "Pair share composition with segment demand: share gains matter more when industry demand in your target segments is growing, not shrinking.",
+    "If “top revenue” brands are not “top profit” brands, stress-test price, rebates, and COGS before pushing more volume into the same mix.",
+    "Balanced scorecard themes reward balanced execution—pick one or two themes to lift next round instead of spreading effort thin.",
+    "Advertising mix is about alignment, not equality: heavier internet spend may fit digital segments; national spend supports broad awareness.",
+    `Liquidity ${cashDir} this quarter (ending ${shortMoney(ec)} vs beginning ${shortMoney(bc)}). Tie the change to operations, financing, and dividends—not revenue alone.`,
+  ];
+}
+
+function projectCoachInsightLines(scenario: NonNullable<DemoScenario>, activeQuarterIndex: number): string[] {
+  const q = scenario.quarters;
+  const n = q.length;
+  const firstShare = q[0].performance.overallSharePct;
+  const lastShare = q[n - 1].performance.overallSharePct;
+  const cur = q[activeQuarterIndex];
+  return [
+    "Use bars for absolute quarter scale, area for profit momentum, and lines for share—together they tell a clearer story than four identical line charts.",
+    "Ending cash can diverge from net income when inventory, receivables, debt, or dividends move—if the two disagree, walk the cash flow path before you decide.",
+    `Across this project, share moved from ${firstShare.toFixed(1)}% to ${lastShare.toFixed(1)}%. Connect that arc to segment bets, capacity, and competitor reactions.`,
+    `${cur.quarter.label} is highlighted on trend charts—cross-check those highlights against the quarter table before you present in class.`,
+    "Before your next decision round, reconcile one revenue driver, one major cost block, and one operational risk (inventory, stockout, or capacity).",
+  ];
+}
+
+function CoachInsightsBlock({ title, lines }: { title: string; lines: string[] }) {
+  return (
+    <div className="dashboard-coach-insights">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-900/90">{title}</p>
+      <ul className="mt-3 list-none space-y-2.5 p-0 text-[13px] leading-relaxed text-emerald-950/95">
+        {lines.map((line, i) => (
+          <li key={i} className="flex gap-2.5">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" aria-hidden />
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function projectSnapshotCoachLines(scenario: NonNullable<DemoScenario>, cur: (typeof scenario.quarters)[0]): string[] {
+  const q = scenario.quarters;
+  const n = q.length;
+  const share0 = q[0].performance.overallSharePct;
+  const shareN = q[n - 1].performance.overallSharePct;
+  return [
+    `Narrate the arc: ${n} quarters, share from ${share0.toFixed(1)}% to ${shareN.toFixed(1)}% — tie the story to segment choices and competitor pressure, not only ad spend.`,
+    `Active row (${cur.quarter.label}): reconcile revenue ${shortMoney(cur.accounting.revenue)}, net income ${shortMoney(cur.accounting.netIncome)}, and ending cash ${shortMoney(cur.accounting.endingCash)} in one sentence each.`,
+    "If net income and cash diverge, explain working capital, inventory, debt, or dividends before you claim “profitability improved.”",
+    "End with one risk and one opportunity you will test next round (price, capacity, segment, or brand mix).",
+  ];
 }
 
 type QuarterTab = "overview" | "performance" | "financials" | "operations";
@@ -274,6 +340,8 @@ function QuarterDashboardBody({ snapshot }: { snapshot: DemoSnapshot }) {
                 {snapshot.marketing.tacticalSummary.length > 280 ? "…" : ""}
               </p>
             </div>
+
+            <CoachInsightsBlock title="Coach insights — how to read this dashboard" lines={quarterCoachInsightLines(snapshot)} />
 
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
               <div className="dashboard-chart-card">
@@ -615,6 +683,7 @@ function ProjectDashboardBody({
                   </li>
                 ))}
               </ul>
+              <CoachInsightsBlock title="Coach insights — study pointers" lines={projectCoachInsightLines(scenario, activeQuarterIndex)} />
             </div>
 
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -670,16 +739,85 @@ function ProjectDashboardBody({
       {tab === "snapshot" && (
         <div className="dashboard-animate-children space-y-4">
           {kpiProject}
-          <div className="rounded-xl border border-slate-200/80 bg-white/80 p-4 text-sm leading-relaxed text-slate-700">
-            <p>
-              <span className="font-semibold text-slate-900">{snapshot.company.name}</span> — active quarter{" "}
-              <span className="font-medium">{snapshot.quarter.label}</span>. Revenue and net income vs prior reflect operating leverage and
-              market share movement. Compare the Trends tab for full series and the Quarter table for raw numbers.
-            </p>
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-[13px]">
-              <li>Share is {cur.performance.overallSharePct.toFixed(1)}% this quarter (cumulative scorecard index {cur.quarter.cumulativeBalancedScorecardIndex}).</li>
-              <li>Cash ended at {shortMoney(cur.accounting.endingCash)} after {shortMoney(cur.accounting.revenue)} revenue.</li>
-            </ul>
+          <div className="dashboard-unified-panel space-y-6">
+            <div className="dashboard-executive space-y-3">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[#0B6381]/90">Integrated snapshot</p>
+              <p className="text-sm leading-relaxed text-slate-800">
+                Use this tab as a <span className="font-semibold">narrative outline</span> for class discussion or your written debrief. Figures below pull from the
+                highlighted quarter ({cur.quarter.label}) while the project context spans all {scenario.quarters.length} loaded quarters.
+              </p>
+              <p className="text-sm leading-relaxed text-slate-700">
+                <span className="font-semibold text-slate-900">{snapshot.company.name}</span> — strategy: {snapshot.company.strategyOneLiner} Segments:{" "}
+                {snapshot.company.targetSegments.join(", ")}.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="rounded-xl border border-slate-200/85 bg-white/95 p-4 shadow-sm">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Performance & market</p>
+                <ul className="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-slate-800">
+                  <li>
+                    Overall share <span className="font-semibold tabular-nums">{cur.performance.overallSharePct.toFixed(1)}%</span>; cumulative balanced scorecard index{" "}
+                    <span className="font-semibold">{cur.quarter.cumulativeBalancedScorecardIndex}</span>.
+                  </li>
+                  <li>
+                    {cur.performance.brands.length} brand{cur.performance.brands.length === 1 ? "" : "s"} tracked — combined brand revenue ties to segment and pricing choices.
+                  </li>
+                  <li>{cur.performance.marketImpactNote || "No separate market-impact note for this slice — use segment demand and competitor rows in the quarter dashboard."}</li>
+                </ul>
+              </div>
+              <div className="rounded-xl border border-slate-200/85 bg-white/95 p-4 shadow-sm">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Financial position</p>
+                <ul className="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-slate-800">
+                  <li>
+                    Revenue <span className="font-semibold tabular-nums">{shortMoney(cur.accounting.revenue)}</span>, net income{" "}
+                    <span className="font-semibold tabular-nums">{shortMoney(cur.accounting.netIncome)}</span>.
+                  </li>
+                  <li>
+                    Cash: beginning <span className="tabular-nums">{shortMoney(cur.accounting.beginningCash)}</span> → ending{" "}
+                    <span className="font-semibold tabular-nums">{shortMoney(cur.accounting.endingCash)}</span>.
+                  </li>
+                  <li>
+                    Equity {shortMoney(cur.accounting.equity)}; liabilities {shortMoney(cur.accounting.totalLiabilities)} — use with ratios in the Financials view for industry
+                    comparison.
+                  </li>
+                </ul>
+              </div>
+              <div className="rounded-xl border border-slate-200/85 bg-white/95 p-4 shadow-sm">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Operations & fulfillment</p>
+                <ul className="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-slate-800">
+                  <li>
+                    Capacity {cur.manufacturing.operatingCapacityUnits.toLocaleString()} units at {cur.manufacturing.utilizationPct}% utilization; lost sales{" "}
+                    {cur.manufacturing.lostSalesUnits} units.
+                  </li>
+                  <li>Ending inventory (total) {cur.manufacturing.endingInventoryTotal.toLocaleString()} — connect to demand forecast and stockout flags by brand in Operations.</li>
+                  <li className="text-slate-700">{cur.manufacturing.tacticalSummary}</li>
+                </ul>
+              </div>
+              <div className="rounded-xl border border-slate-200/85 bg-white/95 p-4 shadow-sm">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Marketing & sales motion</p>
+                <ul className="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-slate-800">
+                  <li>{cur.marketing.tacticalSummary}</li>
+                  <li>{cur.sales.tacticalSummary}</li>
+                  <li>
+                    HR snapshot: {cur.humanResources.headcountNote} (productivity index {cur.humanResources.salesProductivityIndex}).
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200/80 bg-slate-50/90 p-4 text-[13px] leading-relaxed text-slate-800">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Across the full project</p>
+              <p className="mt-2">
+                Revenue ranged from {shortMoney(Math.min(...scenario.quarters.map((x) => x.accounting.revenue)))} to{" "}
+                {shortMoney(Math.max(...scenario.quarters.map((x) => x.accounting.revenue)))} across quarters. Share ranged from{" "}
+                {Math.min(...scenario.quarters.map((x) => x.performance.overallSharePct)).toFixed(1)}% to{" "}
+                {Math.max(...scenario.quarters.map((x) => x.performance.overallSharePct)).toFixed(1)}%. You are focused on row{" "}
+                <span className="font-semibold">{activeQuarterIndex + 1}</span> of {scenario.quarters.length} in the quarter table.
+              </p>
+            </div>
+
+            <CoachInsightsBlock title="Coach insights — written & oral debrief" lines={projectSnapshotCoachLines(scenario, cur)} />
           </div>
         </div>
       )}
@@ -725,12 +863,15 @@ function ProjectDashboardBody({
 export function DashboardPreviewWidget({
   widget,
   context,
+  initialOpen = false,
 }: {
   widget: DashboardPreviewConfig;
   context: DashboardContext;
+  /** Opens the modal on mount (e.g. dev / QA). */
+  initialOpen?: boolean;
 }) {
   const { snapshot, scenario, activeQuarterIndex } = context;
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const descId = useId();

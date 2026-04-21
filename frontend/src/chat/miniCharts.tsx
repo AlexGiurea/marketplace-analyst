@@ -39,20 +39,25 @@ export function MiniGroupedBarChart({
 }) {
   const [hoverGroup, setHoverGroup] = useState<number | null>(null);
   const width = wide ? 720 : 320;
-  const height = wide ? 200 : 170;
-  const padding = { top: 10, right: 10, bottom: 36, left: 10 };
+  const bottomPad = wide ? 56 : 36;
+  const height = wide ? 248 : 170;
+  const padding = { top: 12, right: 12, bottom: bottomPad, left: 12 };
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
   const maxValue = Math.max(1, ...series.flatMap((item) => item.values));
   const groupWidth = plotWidth / Math.max(categories.length, 1);
   const barWidth = Math.min(22, Math.max(8, (groupWidth - 10) / Math.max(series.length, 1)));
+  const rotateLabels =
+    wide &&
+    (categories.length > 4 || categories.some((c) => c.length > 9) || Math.max(0, ...categories.map((c) => c.length)) > 12);
 
   return (
-    <div>
+    <div className="dashboard-chart-plot">
       <ChartLegend series={series} />
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className={`w-full overflow-visible ${wide ? "h-[200px] max-h-[220px]" : "h-[170px]"}`}
+        className={`w-full overflow-visible ${wide ? "min-h-[248px]" : "h-[170px]"}`}
+        preserveAspectRatio="xMidYMid meet"
       >
         <line
           x1={padding.left}
@@ -101,14 +106,33 @@ export function MiniGroupedBarChart({
                   </rect>
                 );
               })}
-              <text
-                x={groupX + groupWidth / 2}
-                y={height - 10}
-                textAnchor="middle"
-                className="fill-slate-500 text-[10px] font-medium pointer-events-none"
-              >
-                {category}
-              </text>
+              {(() => {
+                const cx = groupX + groupWidth / 2;
+                const labelY = height - 10;
+                if (rotateLabels) {
+                  return (
+                    <text
+                      x={cx}
+                      y={labelY}
+                      textAnchor="end"
+                      transform={`rotate(-32 ${cx} ${labelY})`}
+                      className="fill-slate-600 text-[9px] font-medium pointer-events-none"
+                    >
+                      {category.length > 38 ? `${category.slice(0, 36)}…` : category}
+                    </text>
+                  );
+                }
+                return (
+                  <text
+                    x={cx}
+                    y={labelY}
+                    textAnchor="middle"
+                    className="fill-slate-600 text-[10px] font-medium pointer-events-none"
+                  >
+                    {category.length > 14 ? `${category.slice(0, 12)}…` : category}
+                  </text>
+                );
+              })()}
             </g>
           );
         })}
@@ -150,10 +174,10 @@ export function MiniLineChart({
 
   const path = coords.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
 
-  return (
+  const svg = (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      className={`w-full overflow-visible transition-opacity duration-300 ${wide ? "h-[210px] max-h-[240px]" : "h-[170px]"}`}
+      className={`w-full overflow-visible transition-opacity duration-300 ${wide ? "min-h-[210px]" : "h-[170px]"}`}
     >
       <line
         x1={padding.left}
@@ -209,6 +233,8 @@ export function MiniLineChart({
       ) : null}
     </svg>
   );
+  if (wide) return <div className="dashboard-chart-plot">{svg}</div>;
+  return svg;
 }
 
 /** Compact line chart for preview strips (shorter height). */
@@ -280,10 +306,10 @@ export function MiniAreaChart({
       : "";
   const gradId = useId().replace(/:/g, "");
 
-  return (
+  const svg = (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      className={`w-full overflow-visible ${wide ? "h-[210px] max-h-[240px]" : "h-[170px]"}`}
+      className={`w-full overflow-visible ${wide ? "min-h-[210px]" : "h-[170px]"}`}
     >
       <defs>
         <linearGradient id={`area-fill-${gradId}`} x1="0" y1="0" x2="0" y2="1">
@@ -345,11 +371,13 @@ export function MiniAreaChart({
       ) : null}
     </svg>
   );
+  if (wide) return <div className="dashboard-chart-plot">{svg}</div>;
+  return svg;
 }
 
 export type DonutSlice = { label: string; value: number; color: string };
 
-/** Market share / composition — hover highlights slice + legend. */
+/** Market share / composition — donut + HTML legend (full names, wraps). */
 export function MiniDonutChart({
   slices,
   formatter = (v: number) => `${v.toFixed(1)}%`,
@@ -360,13 +388,12 @@ export function MiniDonutChart({
   wide?: boolean;
 }) {
   const [hover, setHover] = useState<number | null>(null);
-  const width = wide ? 720 : 320;
-  const height = wide ? 220 : 180;
-  const cx = width * 0.28;
-  const cy = height / 2;
-  const outer = Math.min(width, height) * 0.34;
-  const inner = outer * 0.58;
   const total = Math.max(1e-9, slices.reduce((s, x) => s + Math.max(0, x.value), 0));
+  const size = wide ? 200 : 168;
+  const cx = size / 2;
+  const cy = size / 2;
+  const outer = size * 0.38;
+  const inner = outer * 0.56;
 
   let angle = -Math.PI / 2;
   const paths = slices.map((slice) => {
@@ -393,58 +420,79 @@ export function MiniDonutChart({
     return { d, slice };
   });
 
-  const legendX = width * 0.52;
-  const legendTop = height * 0.22;
-
   return (
-    <div>
-      <svg viewBox={`0 0 ${width} ${height}`} className={`w-full ${wide ? "h-[220px]" : "h-[180px]"}`}>
-        {paths.map(({ d, slice }, i) => {
-          const dim = hover !== null && hover !== i ? 0.35 : 1;
+    <div
+      className={[
+        "flex flex-col gap-4",
+        wide ? "sm:flex-row sm:items-start sm:gap-6" : "",
+      ].join(" ")}
+    >
+      <div className="relative mx-auto shrink-0 sm:mx-0" style={{ width: size, height: size }}>
+        <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full overflow-visible" aria-hidden>
+          {paths.map(({ d, slice }, i) => {
+            const dim = hover !== null && hover !== i ? 0.35 : 1;
+            return (
+              <path
+                key={`${slice.label}-${i}`}
+                d={d}
+                fill={slice.color}
+                opacity={dim}
+                style={{ transition: "opacity 0.18s ease" }}
+                className="cursor-default"
+                onMouseEnter={() => setHover(i)}
+                onMouseLeave={() => setHover(null)}
+              >
+                <title>
+                  {slice.label}: {formatter(slice.value)}
+                </title>
+              </path>
+            );
+          })}
+          <text x={cx} y={cy - 2} textAnchor="middle" className="fill-slate-800 text-[13px] font-bold">
+            {formatter(total)}
+          </text>
+          <text x={cx} y={cy + 12} textAnchor="middle" className="fill-slate-400 text-[9px] font-medium">
+            of market
+          </text>
+        </svg>
+      </div>
+      <ul className="min-w-0 flex-1 list-none space-y-2 p-0">
+        {slices.map((slice, i) => {
+          const active = hover === null || hover === i;
+          const pct = (slice.value / total) * 100;
           return (
-            <path
+            <li
               key={`${slice.label}-${i}`}
-              d={d}
-              fill={slice.color}
-              opacity={dim}
-              style={{ transition: "opacity 0.18s ease", transformOrigin: `${cx}px ${cy}px` }}
-              className="motion-safe:hover:brightness-110"
+              className={[
+                "flex cursor-default gap-2.5 rounded-xl border px-2.5 py-2 text-[12px] leading-snug transition-opacity duration-150",
+                active ? "border-slate-200/90 bg-white shadow-sm" : "border-transparent bg-slate-50/50 opacity-55",
+              ].join(" ")}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
             >
-              <title>
-                {slice.label}: {formatter(slice.value)}
-              </title>
-            </path>
+              <span
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-sm shadow-sm"
+                style={{ backgroundColor: slice.color }}
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1">
+                <p className="break-words font-semibold text-slate-900" title={slice.label}>
+                  {slice.label}
+                </p>
+                <p className="mt-0.5 flex flex-wrap items-baseline gap-x-2 text-[11px] text-slate-600">
+                  <span className="tabular-nums font-medium text-slate-800">{formatter(slice.value)}</span>
+                  <span className="text-slate-400">({pct.toFixed(1)}% of chart)</span>
+                </p>
+              </div>
+            </li>
           );
         })}
-        <text x={cx} y={cy + 2} textAnchor="middle" className="fill-slate-700 text-[11px] font-bold">
-          {formatter(total)}
-        </text>
-        <text x={cx} y={cy + 16} textAnchor="middle" className="fill-slate-400 text-[9px] font-medium">
-          combined
-        </text>
-        {slices.map((slice, i) => {
-          const active = hover === null || hover === i;
-          const ly = legendTop + i * 16;
-          return (
-            <g key={slice.label} opacity={active ? 1 : 0.4}>
-              <rect x={legendX} y={ly - 6} width="8" height="8" rx="2" fill={slice.color} />
-              <text x={legendX + 12} y={ly + 2} className="fill-slate-700 text-[10px] font-medium">
-                {slice.label.length > 22 ? `${slice.label.slice(0, 20)}…` : slice.label}
-              </text>
-              <text x={width - 10} y={ly + 2} textAnchor="end" className="fill-slate-500 text-[10px] tabular-nums">
-                {formatter(slice.value)}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
+      </ul>
     </div>
   );
 }
 
-/** One horizontal bar, segments sum visually (e.g. ad mix). */
+/** Stacked channel mix — thick bar + legend grid (not SVG-only). */
 export function MiniStackedHorizontalBar({
   segments,
   formatter = (v: number) => shortMoney(v),
@@ -455,46 +503,59 @@ export function MiniStackedHorizontalBar({
   wide?: boolean;
 }) {
   const [hover, setHover] = useState<number | null>(null);
-  const width = wide ? 720 : 320;
-  const height = wide ? 88 : 76;
-  const pad = 12;
-  const barH = 22;
   const total = Math.max(1e-9, segments.reduce((s, x) => s + x.value, 0));
-  const plotW = width - pad * 2;
-  let x = pad;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className={`w-full ${wide ? "h-[88px]" : "h-[76px]"}`}>
-      <text x={pad} y={16} className="fill-slate-500 text-[10px] font-semibold uppercase tracking-wide">
-        Mix (share of spend)
-      </text>
-      {segments.map((seg, i) => {
-        const w = (seg.value / total) * plotW;
-        const dim = hover !== null && hover !== i ? 0.35 : 1;
-        const el = (
-          <g key={seg.label} opacity={dim}>
-            <rect
-              x={x}
-              y={height - pad - barH}
-              width={Math.max(w, 2)}
-              height={barH}
-              rx={4}
-              fill={seg.color}
+    <div className={["space-y-4", wide ? "min-h-[140px]" : ""].join(" ")}>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Spend mix by channel</p>
+      <div
+        className="flex h-14 w-full overflow-hidden rounded-xl border border-slate-200/90 bg-slate-100/70 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)]"
+        role="img"
+        aria-label="Stacked bar of advertising spend by channel"
+      >
+        {segments.map((seg, i) => {
+          const pct = (seg.value / total) * 100;
+          const dim = hover !== null && hover !== i ? 0.38 : 1;
+          return (
+            <div
+              key={seg.label}
+              className="h-full min-w-[4px] cursor-default border-r border-white/25 last:border-r-0 motion-safe:transition-[filter,opacity] motion-safe:duration-150"
+              style={{
+                width: `${pct}%`,
+                backgroundColor: seg.color,
+                opacity: dim,
+                filter: hover === i ? "brightness(1.05)" : undefined,
+              }}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
-              className="motion-safe:transition-[filter] motion-safe:duration-200"
-              style={hover === i ? { filter: "brightness(1.06)" } : undefined}
-            >
-              <title>
-                {seg.label}: {formatter(seg.value)} ({((seg.value / total) * 100).toFixed(0)}%)
-              </title>
-            </rect>
-          </g>
-        );
-        x += w;
-        return el;
-      })}
-    </svg>
+              title={`${seg.label}: ${formatter(seg.value)} (${pct.toFixed(0)}% of spend)`}
+            />
+          );
+        })}
+      </div>
+      <div
+        className={[
+          "grid gap-3",
+          wide ? "sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2",
+        ].join(" ")}
+      >
+        {segments.map((seg) => {
+          const pct = (seg.value / total) * 100;
+          return (
+            <div key={seg.label} className="flex gap-2 rounded-lg border border-slate-100/90 bg-slate-50/80 px-2 py-1.5">
+              <span className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-sm shadow-sm" style={{ backgroundColor: seg.color }} />
+              <div className="min-w-0">
+                <p className="text-[12px] font-semibold leading-tight text-slate-900">{seg.label}</p>
+                <p className="mt-0.5 text-[11px] tabular-nums text-slate-600">
+                  <span className="font-medium text-slate-800">{formatter(seg.value)}</span>
+                  <span className="text-slate-400"> · {pct.toFixed(0)}%</span>
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -512,49 +573,58 @@ export function MiniHorizontalBarChart({
 }) {
   const [hover, setHover] = useState<number | null>(null);
   const width = wide ? 720 : 320;
-  const rowH = 26;
-  const top = 8;
-  const height = top + rows.length * rowH + 8;
+  const rowH = 40;
+  const top = 10;
+  const height = top + rows.length * rowH + 12;
   const maxValue = Math.max(1, ...rows.map((r) => r.value));
-  const barLeft = 120;
-  const barRight = width - 12;
+  const labelW = wide ? 132 : 108;
+  const barLeft = labelW + 8;
+  const barRight = width - 8;
   const plotW = barRight - barLeft;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ height: `${Math.min(height, 220)}px` }}>
-      {rows.map((row, i) => {
-        const y = top + i * rowH;
-        const bw = (row.value / maxValue) * plotW;
-        const dim = hover !== null && hover !== i ? 0.35 : 1;
-        return (
-          <g
-            key={row.label}
-            style={{ opacity: dim, transition: "opacity 0.16s ease" }}
-            onMouseEnter={() => setHover(i)}
-            onMouseLeave={() => setHover(null)}
-          >
-            <text x={8} y={y + 16} className="fill-slate-700 text-[10px] font-medium">
-              {row.label.length > 16 ? `${row.label.slice(0, 14)}…` : row.label}
-            </text>
-            <rect
-              x={barLeft}
-              y={y + 4}
-              width={Math.max(bw, 2)}
-              height={16}
-              rx={4}
-              fill={color}
-              style={hover === i ? { filter: "brightness(1.08)" } : undefined}
+    <div className="dashboard-chart-plot">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full overflow-visible"
+        style={{ height: `${Math.max(height, rows.length * 40 + 24)}px` }}
+      >
+        {rows.map((row, i) => {
+          const y = top + i * rowH;
+          const bw = (row.value / maxValue) * plotW;
+          const dim = hover !== null && hover !== i ? 0.38 : 1;
+          return (
+            <g
+              key={row.label}
+              style={{ opacity: dim, transition: "opacity 0.16s ease" }}
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover(null)}
             >
-              <title>
-                {row.label}: {formatter(row.value)}
-              </title>
-            </rect>
-            <text x={barRight} y={y + 16} textAnchor="end" className="fill-slate-500 text-[10px] tabular-nums">
-              {formatter(row.value)}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+              <title>{row.label}</title>
+              <text x={6} y={y + 22} className="fill-slate-800 text-[11px] font-semibold">
+                {row.label.length > 18 ? `${row.label.slice(0, 16)}…` : row.label}
+              </text>
+              <rect
+                x={barLeft}
+                y={y + 6}
+                width={Math.max(bw, 3)}
+                height={22}
+                rx={5}
+                fill={color}
+                className="motion-safe:transition-[filter] motion-safe:duration-150"
+                style={hover === i ? { filter: "brightness(1.07)" } : undefined}
+              >
+                <title>
+                  {row.label}: {formatter(row.value)}
+                </title>
+              </rect>
+              <text x={barRight} y={y + 22} textAnchor="end" className="fill-slate-700 text-[11px] font-bold tabular-nums">
+                {formatter(row.value)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 }
