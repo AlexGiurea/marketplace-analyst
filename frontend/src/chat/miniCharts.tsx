@@ -24,13 +24,16 @@ export function MiniGroupedBarChart({
   categories,
   series,
   formatter = (value: number) => String(Math.round(value)),
+  wide = false,
 }: {
   categories: string[];
   series: BarSeries[];
   formatter?: (value: number) => string;
+  /** Wider canvas for dashboard modal (uses more horizontal space). */
+  wide?: boolean;
 }) {
-  const width = 320;
-  const height = 170;
+  const width = wide ? 720 : 320;
+  const height = wide ? 200 : 170;
   const padding = { top: 10, right: 10, bottom: 36, left: 10 };
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
@@ -41,7 +44,10 @@ export function MiniGroupedBarChart({
   return (
     <div>
       <ChartLegend series={series} />
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-[170px] w-full overflow-visible">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className={`w-full overflow-visible ${wide ? "h-[200px] max-h-[220px]" : "h-[170px]"}`}
+      >
         <line
           x1={padding.left}
           y1={padding.top + plotHeight}
@@ -96,14 +102,16 @@ export function MiniLineChart({
   color = "#0D50AC",
   formatter = (value: number) => String(Math.round(value)),
   highlightIndex,
+  wide = false,
 }: {
   points: { label: string; value: number }[];
   color?: string;
   formatter?: (value: number) => string;
   highlightIndex?: number;
+  wide?: boolean;
 }) {
-  const width = 320;
-  const height = 170;
+  const width = wide ? 720 : 320;
+  const height = wide ? 210 : 170;
   const padding = { top: 16, right: 10, bottom: 28, left: 10 };
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
@@ -120,7 +128,10 @@ export function MiniLineChart({
   const path = coords.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-[170px] w-full overflow-visible">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className={`w-full overflow-visible transition-opacity duration-300 ${wide ? "h-[210px] max-h-[240px]" : "h-[170px]"}`}
+    >
       <line
         x1={padding.left}
         y1={padding.top + plotHeight}
@@ -129,7 +140,15 @@ export function MiniLineChart({
         stroke="#cbd5e1"
         strokeWidth="1"
       />
-      <path d={path} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d={path}
+        fill="none"
+        stroke={color}
+        strokeWidth={wide ? 2.5 : 3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="motion-safe:transition-[stroke-width] motion-safe:duration-300"
+      />
       {coords.map((point, index) => {
         const highlighted = highlightIndex === index;
         return (

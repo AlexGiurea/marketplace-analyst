@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { DemoScenario, DemoSnapshot } from "../types/demoSnapshot";
 import { MicroLineChart, MiniGroupedBarChart, MiniLineChart, shortMoney } from "./miniCharts";
@@ -30,10 +30,33 @@ function useBodyScrollLock(locked: boolean) {
 
 function KpiPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/45 bg-white/55 px-2.5 py-1.5 text-center shadow-sm backdrop-blur-md">
+    <div className="rounded-xl border border-white/45 bg-white/55 px-2.5 py-1.5 text-center shadow-sm backdrop-blur-md transition-transform duration-200 motion-safe:hover:scale-[1.02]">
       <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-0.5 text-xs font-bold tabular-nums text-slate-900">{value}</p>
     </div>
+  );
+}
+
+function DashTab({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-200",
+        active ? "ui-btn-primary shadow-md" : "ui-btn-light opacity-90 hover:opacity-100",
+      ].join(" ")}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -45,7 +68,7 @@ function BridgeFlow({ snapshot }: { snapshot: DemoSnapshot }) {
       l.label.toLowerCase().includes("operating") ||
       l.label.toLowerCase().includes("net income"),
   );
-  const pick = lines.slice(0, 4);
+  const pick = lines.slice(0, 5);
   if (pick.length === 0) return null;
   return (
     <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 backdrop-blur-sm">
@@ -63,55 +86,237 @@ function BridgeFlow({ snapshot }: { snapshot: DemoSnapshot }) {
   );
 }
 
+function scorecardBarCategories(rows: { theme: string }[]): string[] {
+  return rows.map((row) => row.theme.replace(/ & /g, "\n").split(" ")[0] ?? row.theme);
+}
+
+type QuarterTab = "overview" | "performance" | "financials" | "operations";
+
 function QuarterDashboardBody({ snapshot }: { snapshot: DemoSnapshot }) {
+  const [tab, setTab] = useState<QuarterTab>("overview");
   const brands = snapshot.performance.brands;
+
+  const kpiRow = (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <KpiPill label="Revenue" value={shortMoney(snapshot.accounting.revenue)} />
+      <KpiPill label="Net income" value={shortMoney(snapshot.accounting.netIncome)} />
+      <KpiPill label="Ending cash" value={shortMoney(snapshot.accounting.endingCash)} />
+      <KpiPill label="Overall share" value={`${snapshot.performance.overallSharePct.toFixed(1)}%`} />
+      <KpiPill label="Scorecard index" value={String(snapshot.quarter.cumulativeBalancedScorecardIndex)} />
+    </div>
+  );
+
+  const tabBar = (
+    <div className="flex flex-wrap gap-2 border-b border-slate-200/80 pb-3">
+      <DashTab active={tab === "overview"} onClick={() => setTab("overview")}>
+        Overview
+      </DashTab>
+      <DashTab active={tab === "performance"} onClick={() => setTab("performance")}>
+        Market & brands
+      </DashTab>
+      <DashTab active={tab === "financials"} onClick={() => setTab("financials")}>
+        Financials
+      </DashTab>
+      <DashTab active={tab === "operations"} onClick={() => setTab("operations")}>
+        Operations
+      </DashTab>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-        <KpiPill label="Revenue" value={shortMoney(snapshot.accounting.revenue)} />
-        <KpiPill label="Net income" value={shortMoney(snapshot.accounting.netIncome)} />
-        <KpiPill label="Ending cash" value={shortMoney(snapshot.accounting.endingCash)} />
-        <KpiPill label="Overall share" value={`${snapshot.performance.overallSharePct.toFixed(1)}%`} />
-        <KpiPill label="Scorecard index" value={String(snapshot.quarter.cumulativeBalancedScorecardIndex)} />
-      </div>
-      <BridgeFlow snapshot={snapshot} />
-      <div className="rounded-xl border border-[#0B6381]/15 bg-white/90 p-3 backdrop-blur-sm">
-        <p className="text-[11px] font-semibold text-slate-800">Brand profit</p>
-        <MiniGroupedBarChart
-          categories={brands.map((b) => b.name)}
-          series={[{ label: "Profit", color: "#0b6381", values: brands.map((b) => b.brandProfit) }]}
-          formatter={shortMoney}
-        />
-      </div>
-      <div className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white/95">
-        <table className="w-full min-w-[320px] border-collapse text-xs">
-          <thead>
-            <tr className="border-b border-slate-200 bg-slate-50/90 text-left text-[10px] font-semibold uppercase text-slate-600">
-              <th className="px-2 py-2">Brand</th>
-              <th className="px-2 py-2">Demand</th>
-              <th className="px-2 py-2">Sold</th>
-              <th className="px-2 py-2">Stockout</th>
-            </tr>
-          </thead>
-          <tbody>
-            {brands.map((b) => (
-              <tr key={b.name} className="border-b border-slate-100">
-                <td className="px-2 py-1.5 font-medium text-slate-900">{b.name}</td>
-                <td className="px-2 py-1.5 tabular-nums text-slate-700">{b.demand}</td>
-                <td className="px-2 py-1.5 tabular-nums text-slate-700">{b.sold}</td>
-                <td className="px-2 py-1.5 text-slate-600">{b.stockout ? "Yes" : "No"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="text-[11px] leading-relaxed text-slate-600">
-        Operations: {snapshot.manufacturing.lostSalesUnits} units lost sales; capacity utilization{" "}
-        {snapshot.manufacturing.utilizationPct}%.
-      </p>
+      {tabBar}
+      {tab === "overview" && (
+        <div className="dashboard-animate-children space-y-4">
+          {kpiRow}
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <div className="dashboard-chart-card">
+              <p className="mb-2 text-[11px] font-semibold text-slate-800">Brand profit</p>
+              <MiniGroupedBarChart
+                wide
+                categories={brands.map((b) => b.name)}
+                series={[{ label: "Profit", color: "#0b6381", values: brands.map((b) => b.brandProfit) }]}
+                formatter={shortMoney}
+              />
+            </div>
+            <div className="dashboard-chart-card">
+              <p className="mb-2 text-[11px] font-semibold text-slate-800">Segment demand (team vs industry)</p>
+              <MiniGroupedBarChart
+                wide
+                categories={snapshot.performance.segmentDemand.map((s) => s.segment)}
+                series={[
+                  {
+                    label: "Industry",
+                    color: "#cbd5e1",
+                    values: snapshot.performance.segmentDemand.map((s) => s.industryUnits),
+                  },
+                  {
+                    label: "Team",
+                    color: "#0D50AC",
+                    values: snapshot.performance.segmentDemand.map((s) => s.teamUnits),
+                  },
+                ]}
+              />
+            </div>
+          </div>
+          <BridgeFlow snapshot={snapshot} />
+          <div className="dashboard-chart-card">
+            <p className="mb-2 text-[11px] font-semibold text-slate-800">Balanced scorecard themes (current vs prior)</p>
+            <MiniGroupedBarChart
+              wide
+              categories={scorecardBarCategories(snapshot.balancedScorecard)}
+              series={[
+                { label: "Current", color: "#0D50AC", values: snapshot.balancedScorecard.map((r) => r.score) },
+                { label: "Prior", color: "#94a3b8", values: snapshot.balancedScorecard.map((r) => r.priorScore) },
+              ]}
+              formatter={(v) => `${Math.round(v)}`}
+            />
+          </div>
+        </div>
+      )}
+
+      {tab === "performance" && (
+        <div className="dashboard-animate-children space-y-4">
+          {kpiRow}
+          <div className="dashboard-chart-card">
+            <p className="mb-2 text-[11px] font-semibold text-slate-800">Competitor share snapshot</p>
+            <MiniGroupedBarChart
+              wide
+              categories={[snapshot.company.name, ...snapshot.performance.competitors.map((c) => c.name)]}
+              series={[
+                {
+                  label: "Share %",
+                  color: "#0D50AC",
+                  values: [snapshot.performance.overallSharePct, ...snapshot.performance.competitors.map((c) => c.sharePct)],
+                },
+              ]}
+              formatter={(v) => `${v.toFixed(0)}%`}
+            />
+          </div>
+          <div className="dashboard-chart-card">
+            <p className="mb-2 text-[11px] font-semibold text-slate-800">Brand demand vs sold</p>
+            <MiniGroupedBarChart
+              wide
+              categories={brands.map((b) => b.name)}
+              series={[
+                { label: "Demand", color: "#7dd3fc", values: brands.map((b) => b.demand) },
+                { label: "Sold", color: "#0b6381", values: brands.map((b) => b.sold) },
+              ]}
+            />
+          </div>
+          {snapshot.performance.strategicGraph.length >= 2 ? (
+            <div className="dashboard-chart-card">
+              <p className="mb-2 text-[11px] font-semibold text-slate-800">Strategic trend — market appeal</p>
+              <MiniLineChart
+                wide
+                points={snapshot.performance.strategicGraph.map((p) => ({
+                  label: p.quarterLabel.replace("Quarter ", "Q"),
+                  value: p.marketAppealIndex,
+                }))}
+                color="#0b6381"
+                formatter={(v) => String(Math.round(v))}
+                highlightIndex={snapshot.performance.strategicGraph.length - 1}
+              />
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {tab === "financials" && (
+        <div className="dashboard-animate-children space-y-4">
+          {kpiRow}
+          <BridgeFlow snapshot={snapshot} />
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="dashboard-chart-card">
+              <p className="text-[11px] font-semibold text-slate-800">Cash position</p>
+              <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900">{shortMoney(snapshot.accounting.endingCash)}</p>
+              <p className="mt-1 text-[10px] text-slate-500">Beginning {shortMoney(snapshot.accounting.beginningCash)}</p>
+            </div>
+            <div className="dashboard-chart-card">
+              <p className="text-[11px] font-semibold text-slate-800">Equity & leverage (demo)</p>
+              <ul className="mt-2 space-y-1 text-[11px] text-slate-700">
+                <li className="flex justify-between">
+                  <span>Equity</span>
+                  <span className="font-medium tabular-nums">{shortMoney(snapshot.accounting.equity)}</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Total liabilities</span>
+                  <span className="font-medium tabular-nums">{shortMoney(snapshot.accounting.totalLiabilities)}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white/95">
+            <table className="w-full min-w-[360px] border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/90 text-left text-[10px] font-semibold uppercase text-slate-600">
+                  <th className="px-2 py-2">Ratio</th>
+                  <th className="px-2 py-2">Team</th>
+                  <th className="px-2 py-2">Industry</th>
+                </tr>
+              </thead>
+              <tbody>
+                {snapshot.accounting.industryRatios.slice(0, 5).map((r) => (
+                  <tr key={r.name} className="border-b border-slate-100">
+                    <td className="px-2 py-1.5 text-slate-800">{r.name}</td>
+                    <td className="px-2 py-1.5 tabular-nums font-medium">{r.unit === "percent" ? `${r.teamValue}%` : r.teamValue}</td>
+                    <td className="px-2 py-1.5 tabular-nums text-slate-600">{r.unit === "percent" ? `${r.industryMedian}%` : r.industryMedian}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {tab === "operations" && (
+        <div className="dashboard-animate-children space-y-4">
+          {kpiRow}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="dashboard-chart-card text-center">
+              <p className="text-[10px] font-semibold uppercase text-slate-500">Capacity</p>
+              <p className="mt-1 text-lg font-bold text-slate-900">{snapshot.manufacturing.operatingCapacityUnits.toLocaleString()} u</p>
+              <p className="text-[11px] text-slate-600">{snapshot.manufacturing.utilizationPct}% utilization</p>
+            </div>
+            <div className="dashboard-chart-card text-center">
+              <p className="text-[10px] font-semibold uppercase text-slate-500">Lost sales</p>
+              <p className="mt-1 text-lg font-bold text-rose-800">{snapshot.manufacturing.lostSalesUnits} units</p>
+            </div>
+            <div className="dashboard-chart-card text-center">
+              <p className="text-[10px] font-semibold uppercase text-slate-500">Inventory (total)</p>
+              <p className="mt-1 text-lg font-bold text-slate-900">{snapshot.manufacturing.endingInventoryTotal.toLocaleString()}</p>
+            </div>
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white/95">
+            <table className="w-full min-w-[320px] border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/90 text-left text-[10px] font-semibold uppercase text-slate-600">
+                  <th className="px-2 py-2">Brand</th>
+                  <th className="px-2 py-2">Demand</th>
+                  <th className="px-2 py-2">Sold</th>
+                  <th className="px-2 py-2">Stockout</th>
+                </tr>
+              </thead>
+              <tbody>
+                {brands.map((b) => (
+                  <tr key={b.name} className="border-b border-slate-100 transition-colors hover:bg-slate-50/80">
+                    <td className="px-2 py-1.5 font-medium text-slate-900">{b.name}</td>
+                    <td className="px-2 py-1.5 tabular-nums text-slate-700">{b.demand}</td>
+                    <td className="px-2 py-1.5 tabular-nums text-slate-700">{b.sold}</td>
+                    <td className="px-2 py-1.5 text-slate-600">{b.stockout ? "Yes" : "No"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-[11px] leading-relaxed text-slate-600">{snapshot.manufacturing.productionNotes}</p>
+        </div>
+      )}
     </div>
   );
 }
+
+type ProjectTab = "trends" | "snapshot" | "quarters";
 
 function ProjectDashboardBody({
   snapshot,
@@ -122,6 +327,7 @@ function ProjectDashboardBody({
   scenario?: DemoScenario;
   activeQuarterIndex: number;
 }) {
+  const [tab, setTab] = useState<ProjectTab>("trends");
   const multi = scenario && scenario.quarters.length > 1;
   if (!multi) {
     return (
@@ -134,72 +340,134 @@ function ProjectDashboardBody({
     );
   }
 
-  const qPoints = scenario.quarters.map((q) => ({
-    label: q.quarter.label.replace("Quarter ", "Q"),
-    value: q.accounting.revenue,
-  }));
-  const scPoints = scenario.quarters.map((q) => ({
-    label: q.quarter.label.replace("Quarter ", "Q"),
-    value: q.quarter.cumulativeBalancedScorecardIndex,
-  }));
+  const qLabel = (q: (typeof scenario.quarters)[0]) => q.quarter.label.replace("Quarter ", "Q");
+  const revenuePts = scenario.quarters.map((q) => ({ label: qLabel(q), value: q.accounting.revenue }));
+  const niPts = scenario.quarters.map((q) => ({ label: qLabel(q), value: q.accounting.netIncome }));
+  const sharePts = scenario.quarters.map((q) => ({ label: qLabel(q), value: q.performance.overallSharePct }));
+  const cashPts = scenario.quarters.map((q) => ({ label: qLabel(q), value: q.accounting.endingCash }));
+  const scPts = scenario.quarters.map((q) => ({ label: qLabel(q), value: q.quarter.cumulativeBalancedScorecardIndex }));
+
   const prevIdx = Math.max(0, activeQuarterIndex - 1);
   const cur = scenario.quarters[activeQuarterIndex];
   const prev = scenario.quarters[prevIdx];
   const revDelta = cur.accounting.revenue - prev.accounting.revenue;
   const niDelta = cur.accounting.netIncome - prev.accounting.netIncome;
+  const hi = Math.min(activeQuarterIndex, scenario.quarters.length - 1);
+
+  const kpiProject = (
+    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <KpiPill label="Active quarter" value={qLabel(cur)} />
+      <KpiPill label="Revenue" value={shortMoney(cur.accounting.revenue)} />
+      <KpiPill label="Δ Revenue vs prior" value={`${revDelta >= 0 ? "+" : ""}${shortMoney(revDelta)}`} />
+      <KpiPill label="Δ Net income vs prior" value={`${niDelta >= 0 ? "+" : ""}${shortMoney(niDelta)}`} />
+    </div>
+  );
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-        <KpiPill label="Active quarter" value={snapshot.quarter.label.replace("Quarter ", "Q")} />
-        <KpiPill label="Revenue" value={shortMoney(cur.accounting.revenue)} />
-        <KpiPill label="Δ Revenue vs prior" value={`${revDelta >= 0 ? "+" : ""}${shortMoney(revDelta)}`} />
-        <KpiPill label="Δ Net income vs prior" value={`${niDelta >= 0 ? "+" : ""}${shortMoney(niDelta)}`} />
+      <div className="flex flex-wrap gap-2 border-b border-slate-200/80 pb-3">
+        <DashTab active={tab === "trends"} onClick={() => setTab("trends")}>
+          Trends & charts
+        </DashTab>
+        <DashTab active={tab === "snapshot"} onClick={() => setTab("snapshot")}>
+          Snapshot
+        </DashTab>
+        <DashTab active={tab === "quarters"} onClick={() => setTab("quarters")}>
+          Quarter table
+        </DashTab>
       </div>
-      <div className="rounded-xl border border-[#0B6381]/15 bg-white/90 p-3 backdrop-blur-sm">
-        <p className="text-[11px] font-semibold text-slate-800">Revenue by quarter</p>
-        <MiniLineChart
-          points={qPoints}
-          formatter={shortMoney}
-          highlightIndex={Math.min(activeQuarterIndex, qPoints.length - 1)}
-        />
-      </div>
-      <div className="rounded-xl border border-[#0B6381]/15 bg-white/90 p-3 backdrop-blur-sm">
-        <p className="text-[11px] font-semibold text-slate-800">Cumulative scorecard index</p>
-        <MiniLineChart
-          points={scPoints}
-          formatter={(v) => String(Math.round(v))}
-          color="#0b6381"
-          highlightIndex={Math.min(activeQuarterIndex, scPoints.length - 1)}
-        />
-      </div>
-      <div className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white/95">
-        <table className="w-full min-w-[400px] border-collapse text-xs">
-          <thead>
-            <tr className="border-b border-slate-200 bg-slate-50/90 text-left text-[10px] font-semibold uppercase text-slate-600">
-              <th className="px-2 py-2">Q</th>
-              <th className="px-2 py-2">Revenue</th>
-              <th className="px-2 py-2">Net income</th>
-              <th className="px-2 py-2">Share %</th>
-              <th className="px-2 py-2">Score idx</th>
-            </tr>
-          </thead>
-          <tbody>
-            {scenario.quarters.map((q, i) => (
-              <tr
-                key={q.quarter.label}
-                className={`border-b border-slate-100 ${i === activeQuarterIndex ? "bg-sky-50/80" : ""}`}
-              >
-                <td className="px-2 py-1.5 font-medium text-slate-900">{q.quarter.label.replace("Quarter ", "Q")}</td>
-                <td className="px-2 py-1.5 tabular-nums">{shortMoney(q.accounting.revenue)}</td>
-                <td className="px-2 py-1.5 tabular-nums">{shortMoney(q.accounting.netIncome)}</td>
-                <td className="px-2 py-1.5 tabular-nums">{q.performance.overallSharePct.toFixed(1)}%</td>
-                <td className="px-2 py-1.5 tabular-nums">{q.quarter.cumulativeBalancedScorecardIndex}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+
+      {tab === "trends" && (
+        <div className="dashboard-animate-children space-y-4">
+          {kpiProject}
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <div className="dashboard-chart-card">
+              <p className="mb-2 text-[11px] font-semibold text-slate-800">Revenue by quarter</p>
+              <MiniLineChart wide points={revenuePts} formatter={shortMoney} highlightIndex={hi} />
+            </div>
+            <div className="dashboard-chart-card">
+              <p className="mb-2 text-[11px] font-semibold text-slate-800">Net income by quarter</p>
+              <MiniLineChart wide points={niPts} formatter={shortMoney} color="#0f766e" highlightIndex={hi} />
+            </div>
+            <div className="dashboard-chart-card">
+              <p className="mb-2 text-[11px] font-semibold text-slate-800">Overall share %</p>
+              <MiniLineChart
+                wide
+                points={sharePts}
+                formatter={(v) => `${v.toFixed(1)}%`}
+                color="#7c3aed"
+                highlightIndex={hi}
+              />
+            </div>
+            <div className="dashboard-chart-card">
+              <p className="mb-2 text-[11px] font-semibold text-slate-800">Ending cash</p>
+              <MiniLineChart wide points={cashPts} formatter={shortMoney} color="#b45309" highlightIndex={hi} />
+            </div>
+          </div>
+          <div className="dashboard-chart-card">
+            <p className="mb-2 text-[11px] font-semibold text-slate-800">Cumulative balanced scorecard index</p>
+            <MiniLineChart
+              wide
+              points={scPts}
+              formatter={(v) => String(Math.round(v))}
+              color="#0b6381"
+              highlightIndex={hi}
+            />
+          </div>
+        </div>
+      )}
+
+      {tab === "snapshot" && (
+        <div className="dashboard-animate-children space-y-4">
+          {kpiProject}
+          <div className="rounded-xl border border-slate-200/80 bg-white/80 p-4 text-sm leading-relaxed text-slate-700">
+            <p>
+              <span className="font-semibold text-slate-900">{snapshot.company.name}</span> — active quarter{" "}
+              <span className="font-medium">{snapshot.quarter.label}</span>. Revenue and net income vs prior reflect operating leverage and
+              market share movement. Compare the Trends tab for full series and the Quarter table for raw numbers.
+            </p>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-[13px]">
+              <li>Share is {cur.performance.overallSharePct.toFixed(1)}% this quarter (cumulative scorecard index {cur.quarter.cumulativeBalancedScorecardIndex}).</li>
+              <li>Cash ended at {shortMoney(cur.accounting.endingCash)} after {shortMoney(cur.accounting.revenue)} revenue.</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {tab === "quarters" && (
+        <div className="dashboard-animate-children space-y-4">
+          {kpiProject}
+          <div className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white/95">
+            <table className="w-full min-w-[520px] border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/90 text-left text-[10px] font-semibold uppercase text-slate-600">
+                  <th className="px-3 py-2">Q</th>
+                  <th className="px-3 py-2">Revenue</th>
+                  <th className="px-3 py-2">Net income</th>
+                  <th className="px-3 py-2">Share %</th>
+                  <th className="px-3 py-2">Ending cash</th>
+                  <th className="px-3 py-2">Score idx</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scenario.quarters.map((q, i) => (
+                  <tr
+                    key={q.quarter.label}
+                    className={`border-b border-slate-100 transition-colors ${i === activeQuarterIndex ? "bg-sky-50/90" : "hover:bg-slate-50/60"}`}
+                  >
+                    <td className="px-3 py-2 font-medium text-slate-900">{qLabel(q)}</td>
+                    <td className="px-3 py-2 tabular-nums">{shortMoney(q.accounting.revenue)}</td>
+                    <td className="px-3 py-2 tabular-nums">{shortMoney(q.accounting.netIncome)}</td>
+                    <td className="px-3 py-2 tabular-nums">{q.performance.overallSharePct.toFixed(1)}%</td>
+                    <td className="px-3 py-2 tabular-nums">{shortMoney(q.accounting.endingCash)}</td>
+                    <td className="px-3 py-2 tabular-nums">{q.quarter.cumulativeBalancedScorecardIndex}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -240,13 +508,15 @@ export function DashboardPreviewWidget({
 
   const title =
     widget.title ??
-    (effectiveScope === "project" ? "Project dashboard" : `Quarter dashboard · ${snapshot.quarter.label}`);
+    (effectiveScope === "project"
+      ? `${snapshot.company.name} — project dashboard`
+      : `${snapshot.company.name} — ${snapshot.quarter.label}`);
 
   const caption =
     widget.caption ??
     (effectiveScope === "project"
-      ? "Multi-quarter company view: trends and quarter-by-quarter financials."
-      : "Current quarter snapshot: KPIs, profit bridge, and brand table.");
+      ? "Multi-quarter overview: share, revenue, profit, cash, scorecard, brands, and capacity trends."
+      : "Quarter snapshot across performance, financials, and operations.");
 
   const previewRevenue = snapshot.accounting.revenue;
   const previewShare = snapshot.performance.overallSharePct;
@@ -309,12 +579,12 @@ export function DashboardPreviewWidget({
       {open &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-4"
+            className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-3 md:p-6"
             role="presentation"
           >
             <button
               type="button"
-              className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity motion-reduce:transition-none"
+              className="absolute inset-0 bg-slate-900/55 backdrop-blur-md transition-opacity motion-reduce:transition-none"
               aria-label="Close dashboard overlay"
               onClick={() => setOpen(false)}
             />
@@ -323,27 +593,27 @@ export function DashboardPreviewWidget({
               aria-modal="true"
               aria-labelledby={titleId}
               aria-describedby={descId}
-              className="animate-panel-rise relative z-[101] flex max-h-[min(92dvh,900px)] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-white/40 bg-gradient-to-b from-[#eef6f9] to-white shadow-[0_24px_80px_-20px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:rounded-2xl"
+              className="dashboard-modal-shell relative z-[101] flex max-h-[min(94dvh,920px)] w-full max-w-[min(97vw,1400px)] min-w-0 flex-col overflow-hidden rounded-t-2xl border border-white/50 bg-gradient-to-b from-[#eef6f9] via-white to-[#f8fafc] shadow-[0_32px_100px_-24px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:rounded-2xl"
             >
-              <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/50 bg-white/50 px-4 py-3 backdrop-blur-md">
-                <div>
-                  <p id={titleId} className="text-base font-bold text-slate-900">
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/50 bg-white/60 px-4 py-3 backdrop-blur-md sm:px-6">
+                <div className="min-w-0">
+                  <p id={titleId} className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
                     {title}
                   </p>
-                  <p id={descId} className="text-xs text-slate-600">
+                  <p id={descId} className="mt-0.5 text-xs text-slate-600 sm:text-sm">
                     {caption}
                   </p>
                 </div>
                 <button
                   ref={closeBtnRef}
                   type="button"
-                  className="ui-btn-light rounded-xl px-3 py-2 text-xs font-semibold"
+                  className="ui-btn-light shrink-0 rounded-xl px-4 py-2 text-xs font-semibold"
                   onClick={() => setOpen(false)}
                 >
                   Close
                 </button>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">{modalContent}</div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-5">{modalContent}</div>
             </div>
           </div>,
           document.body,
