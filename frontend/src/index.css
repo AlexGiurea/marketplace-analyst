@@ -139,7 +139,7 @@
 
   /* Prevent SVG axis labels from clipping inside chart cards */
   .dashboard-chart-plot {
-    @apply min-h-[240px] w-full overflow-visible sm:min-h-[260px];
+    @apply w-full overflow-visible;
   }
 
   .dashboard-unified-panel {

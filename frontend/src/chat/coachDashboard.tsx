@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { DemoScenario, DemoSnapshot } from "../types/demoSnapshot";
 import {
@@ -96,8 +96,25 @@ function BridgeFlow({ snapshot }: { snapshot: DemoSnapshot }) {
   );
 }
 
+/** Short x-axis labels that stay unique (avoid two themes both collapsing to "Financial"). */
 function scorecardBarCategories(rows: { theme: string }[]): string[] {
-  return rows.map((row) => row.theme.replace(/ & /g, "\n").split(" ")[0] ?? row.theme);
+  const labels = rows.map((row) => {
+    const t = row.theme.trim().replace(/\s+/g, " ");
+    const head = t.split(/ & | \+ /)[0] ?? t;
+    const words = head.split(" ");
+    if (words.length >= 2) {
+      const two = `${words[0]} ${words[1]}`;
+      return two.length > 30 ? `${two.slice(0, 28)}…` : two;
+    }
+    return head.length > 22 ? `${head.slice(0, 20)}…` : head;
+  });
+  const seen = new Map<string, number>();
+  return labels.map((lab) => {
+    const n = (seen.get(lab) ?? 0) + 1;
+    seen.set(lab, n);
+    if (n === 1) return lab;
+    return `${lab.replace(/…$/, "").slice(0, 14)}·${n}`;
+  });
 }
 
 const DONUT_PALETTE = ["#0D50AC", "#0b6381", "#7c3aed", "#b45309", "#64748b", "#94a3b8", "#cbd5e1"];
@@ -440,13 +457,16 @@ function QuarterDashboardBody({ snapshot }: { snapshot: DemoSnapshot }) {
           </div>
 
           <BridgeFlow snapshot={snapshot} />
-          <div className="dashboard-chart-card">
+          <div className="dashboard-chart-card pb-6 sm:pb-8">
             <p className="mb-1 text-[11px] font-semibold text-slate-800">Balanced scorecard themes (current vs prior)</p>
-            <p className="mb-2 text-[10px] text-slate-500">Grouped view to compare quarter-over-quarter theme movement.</p>
+            <p className="mb-2 text-[10px] text-slate-500">
+              Grouped view to compare quarter-over-quarter theme movement. Axis labels truncate when crowded — hover a label for the full theme name.
+            </p>
             <MiniGroupedBarChart
               wide
               interactive
               categories={scorecardBarCategories(snapshot.balancedScorecard)}
+              categoryDetail={snapshot.balancedScorecard.map((r) => r.theme)}
               series={[
                 { label: "Current", color: "#0D50AC", values: snapshot.balancedScorecard.map((r) => r.score) },
                 { label: "Prior", color: "#94a3b8", values: snapshot.balancedScorecard.map((r) => r.priorScore) },
@@ -875,6 +895,10 @@ export function DashboardPreviewWidget({
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const descId = useId();
+
+  useLayoutEffect(() => {
+    if (initialOpen) setOpen(true);
+  }, [initialOpen]);
 
   useBodyScrollLock(open);
 

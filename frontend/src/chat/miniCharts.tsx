@@ -28,6 +28,8 @@ export function MiniGroupedBarChart({
   formatter = (value: number) => String(Math.round(value)),
   wide = false,
   interactive = false,
+  /** Full labels for native tooltips when `categories` are shortened for the axis. */
+  categoryDetail,
 }: {
   categories: string[];
   series: BarSeries[];
@@ -36,34 +38,45 @@ export function MiniGroupedBarChart({
   wide?: boolean;
   /** Dim non-hovered groups; shows native tooltips on bars. */
   interactive?: boolean;
+  categoryDetail?: string[];
 }) {
   const [hoverGroup, setHoverGroup] = useState<number | null>(null);
   const width = wide ? 720 : 320;
-  const bottomPad = wide ? 56 : 36;
-  const height = wide ? 248 : 170;
-  const padding = { top: 12, right: 12, bottom: bottomPad, left: 12 };
+  const maxCatLen = categories.length ? Math.max(...categories.map((c) => c.length)) : 0;
+  const rotateLabels =
+    wide &&
+    (categories.length > 5 || maxCatLen > 11 || categories.some((c) => c.length > 14));
+  /** Dense x-axes: HTML row below SVG so labels are never clipped by the viewBox. */
+  const htmlAxisLabels = rotateLabels;
+  const topPad = wide ? 28 : 12;
+  const bottomPad = wide ? (htmlAxisLabels ? 10 : 56) : 36;
+  const height = wide ? (htmlAxisLabels ? topPad + 196 + bottomPad : 252) : 170;
+  const padding = { top: topPad, right: 14, bottom: bottomPad, left: 14 };
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
   const maxValue = Math.max(1, ...series.flatMap((item) => item.values));
   const groupWidth = plotWidth / Math.max(categories.length, 1);
   const barWidth = Math.min(22, Math.max(8, (groupWidth - 10) / Math.max(series.length, 1)));
-  const rotateLabels =
-    wide &&
-    (categories.length > 4 || categories.some((c) => c.length > 9) || Math.max(0, ...categories.map((c) => c.length)) > 12);
+  const axisY = padding.top + plotHeight;
 
   return (
-    <div className="dashboard-chart-plot">
+    <div className={["dashboard-chart-plot", htmlAxisLabels ? "pb-1" : ""].filter(Boolean).join(" ")}>
       <ChartLegend series={series} />
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className={`w-full overflow-visible ${wide ? "min-h-[248px]" : "h-[170px]"}`}
-        preserveAspectRatio="xMidYMid meet"
+        className={`block w-full ${wide ? (htmlAxisLabels ? "min-h-[220px]" : "min-h-[252px]") : "h-[170px]"}`}
+        style={{ overflow: "visible" }}
+        preserveAspectRatio="xMidYMin meet"
       >
+        <text x={padding.left + plotWidth} y={padding.top - 2} textAnchor="end" className="fill-slate-500">
+          <tspan className="text-[9px] font-medium uppercase tracking-wide">Max scale </tspan>
+          <tspan className="text-[11px] font-bold tabular-nums text-slate-700">{formatter(maxValue)}</tspan>
+        </text>
         <line
           x1={padding.left}
-          y1={padding.top + plotHeight}
+          y1={axisY}
           x2={padding.left + plotWidth}
-          y2={padding.top + plotHeight}
+          y2={axisY}
           stroke="#cbd5e1"
           strokeWidth="1"
         />
@@ -73,7 +86,7 @@ export function MiniGroupedBarChart({
             interactive && hoverGroup !== null && hoverGroup !== categoryIndex ? 0.28 : 1;
           return (
             <g
-              key={category}
+              key={`grp-${categoryIndex}-${category.slice(0, 24)}`}
               style={{ opacity: dim, transition: "opacity 0.18s ease" }}
               onMouseEnter={interactive ? () => setHoverGroup(categoryIndex) : undefined}
               onMouseLeave={interactive ? () => setHoverGroup(null) : undefined}
@@ -101,45 +114,52 @@ export function MiniGroupedBarChart({
                     }
                   >
                     <title>
-                      {category} — {item.label}: {formatter(value)}
+                      {(categoryDetail?.[categoryIndex] ?? category)} — {item.label}: {formatter(value)}
                     </title>
                   </rect>
                 );
               })}
-              {(() => {
-                const cx = groupX + groupWidth / 2;
-                const labelY = height - 10;
-                if (rotateLabels) {
+              {!htmlAxisLabels ? (
+                (() => {
+                  const cx = groupX + groupWidth / 2;
+                  const labelY = axisY + 18;
                   return (
                     <text
                       x={cx}
                       y={labelY}
-                      textAnchor="end"
-                      transform={`rotate(-32 ${cx} ${labelY})`}
-                      className="fill-slate-600 text-[9px] font-medium pointer-events-none"
+                      textAnchor="middle"
+                      dominantBaseline="hanging"
+                      className="fill-slate-700 text-[10px] font-medium pointer-events-none"
                     >
-                      {category.length > 38 ? `${category.slice(0, 36)}…` : category}
+                      {category.length > 16 ? `${category.slice(0, 14)}…` : category}
                     </text>
                   );
-                }
-                return (
-                  <text
-                    x={cx}
-                    y={labelY}
-                    textAnchor="middle"
-                    className="fill-slate-600 text-[10px] font-medium pointer-events-none"
-                  >
-                    {category.length > 14 ? `${category.slice(0, 12)}…` : category}
-                  </text>
-                );
-              })()}
+                })()
+              ) : null}
             </g>
           );
         })}
-        <text x={width - 8} y={12} textAnchor="end" className="fill-slate-400 text-[10px] font-medium">
-          {formatter(maxValue)}
-        </text>
       </svg>
+      {htmlAxisLabels ? (
+        <div
+          className="mt-2 grid gap-x-1.5 px-0 text-[9px] font-medium text-slate-700"
+          style={{
+            gridTemplateColumns: `repeat(${Math.max(categories.length, 1)}, minmax(3.25rem, 1fr))`,
+            paddingLeft: padding.left,
+            paddingRight: padding.right,
+          }}
+        >
+          {categories.map((cat, i) => (
+            <div
+              key={`axis-${i}`}
+              className="min-h-[1.1rem] min-w-0 cursor-default truncate px-0.5 text-center leading-tight tracking-tight text-slate-700"
+              title={categoryDetail?.[i] ?? cat}
+            >
+              {cat}
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
