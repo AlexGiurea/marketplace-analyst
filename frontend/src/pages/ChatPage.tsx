@@ -334,7 +334,7 @@ export function ChatPage() {
 
         <div
           ref={listRef}
-          className="stagger-list-in min-h-0 flex-1 space-y-4 overflow-y-auto bg-white/88 px-3 py-5 backdrop-blur-[2px] sm:px-6"
+          className="stagger-list-in min-h-0 flex-1 space-y-4 overflow-y-auto bg-white/92 px-3 py-5 sm:px-6"
         >
           {messages.map((m, i) => (
             <div
@@ -347,7 +347,7 @@ export function ChatPage() {
                   <div className="mt-0.5 hidden h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#0B6381]/15 bg-white/70 text-[10px] font-extrabold leading-none text-[#0B6381] shadow-sm backdrop-blur-sm sm:flex">
                     AI
                   </div>
-                  <div className="rounded-2xl rounded-tl-md border border-white/60 bg-white/80 px-4 py-3 text-slate-800 shadow-[0_2px_16px_rgba(11,99,129,0.06)] backdrop-blur-sm">
+                  <div className="rounded-2xl rounded-tl-md border border-white/60 bg-white/95 px-4 py-3 text-slate-800 shadow-[0_2px_16px_rgba(11,99,129,0.06)]">
                     <AssistantBody content={m.content} context={m.widgetContext ?? currentRenderContext} />
                   </div>
                 </div>

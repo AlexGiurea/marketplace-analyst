@@ -43,7 +43,7 @@ function useBodyScrollLock(locked: boolean) {
 
 function KpiPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/45 bg-white/55 px-2.5 py-1.5 text-center shadow-sm backdrop-blur-md transition-transform duration-200 motion-safe:hover:scale-[1.02]">
+    <div className="rounded-xl border border-white/45 bg-white/85 px-2.5 py-1.5 text-center shadow-sm transition-transform duration-200 motion-safe:hover:scale-[1.02]">
       <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-0.5 text-xs font-bold tabular-nums text-slate-900">{value}</p>
     </div>
@@ -84,7 +84,7 @@ function BridgeFlow({ snapshot }: { snapshot: DemoSnapshot }) {
   const pick = lines.slice(0, 5);
   if (pick.length === 0) return null;
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 backdrop-blur-sm">
+    <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-3">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Revenue to profit (simplified)</p>
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-700">
         {pick.map((line, i) => (
@@ -1007,7 +1007,7 @@ export function DashboardPreviewWidget({
   return (
     <>
       <section
-        className="animate-panel-rise overflow-hidden rounded-2xl border border-[#0B6381]/25 bg-gradient-to-br from-[#f0f9fc]/95 to-white/98 p-3 shadow-[0_12px_40px_-16px_rgba(11,99,129,0.15)] backdrop-blur-md"
+        className="animate-panel-rise overflow-hidden rounded-2xl border border-[#0B6381]/25 bg-gradient-to-br from-[#f0f9fc] to-white p-3 shadow-[0_12px_40px_-16px_rgba(11,99,129,0.15)]"
         aria-label={title}
       >
         <div className="flex items-start justify-between gap-2">
@@ -1028,7 +1028,7 @@ export function DashboardPreviewWidget({
           <KpiPill label="Share" value={`${previewShare.toFixed(1)}%`} />
           <KpiPill label="Net" value={shortMoney(previewNi)} />
         </div>
-        <div className="mt-2 rounded-xl border border-white/50 bg-white/40 p-2 backdrop-blur-sm">
+        <div className="mt-2 rounded-xl border border-white/50 bg-white/80 p-2">
           <MicroLineChart points={trendPoints} />
         </div>
         <button
@@ -1057,9 +1057,9 @@ export function DashboardPreviewWidget({
               aria-modal="true"
               aria-labelledby={titleId}
               aria-describedby={descId}
-              className="dashboard-modal-shell relative z-[101] flex h-[70dvh] max-h-[70dvh] w-[70vw] max-w-[70vw] min-w-0 flex-col overflow-hidden rounded-t-2xl border border-white/50 bg-gradient-to-b from-[#eef6f9] via-white to-[#f8fafc] shadow-[0_32px_100px_-24px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:rounded-2xl"
+              className="dashboard-modal-shell relative z-[101] flex h-[82dvh] max-h-[82dvh] w-[82vw] max-w-[min(82vw,1280px)] min-w-0 flex-col overflow-hidden rounded-t-2xl border border-white/50 bg-gradient-to-b from-[#eef6f9] via-white to-[#f8fafc] shadow-[0_32px_100px_-24px_rgba(0,0,0,0.5)] sm:rounded-2xl"
             >
-              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/50 bg-white/60 px-4 py-3 backdrop-blur-md sm:px-6">
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/50 bg-white/90 px-4 py-3 sm:px-6">
                 <div className="min-w-0">
                   <p id={titleId} className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
                     {title}
@@ -1071,7 +1071,7 @@ export function DashboardPreviewWidget({
                 <div className="flex shrink-0 items-center gap-2">
                   <button
                     type="button"
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#0B6381]/22 bg-white/75 text-[#0B6381] shadow-sm backdrop-blur-md transition hover:border-[#0B6381]/38 hover:bg-[#0B6381]/[0.06]"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#0B6381]/22 bg-white text-[#0B6381] shadow-sm transition hover:border-[#0B6381]/38 hover:bg-[#0B6381]/[0.06]"
                     title="Open full dashboard in a new tab (this tab returns to AI Coach)"
                     aria-label="Open full dashboard in a new tab; this tab returns to AI Coach"
                     onClick={openFullDashboardInNewTab}

@@ -136,7 +136,7 @@ export function InlineRichText({ text }: { text: string }) {
             key={index}
             to={buildCitationHref(part.id)}
             title={`${destination.title} (${part.id})`}
-            className="rounded-md border border-sky-200/60 bg-sky-50/90 px-1.5 py-0.5 font-medium text-[#0D50AC] underline decoration-[#0D50AC]/35 underline-offset-2 backdrop-blur-sm transition hover:-translate-y-px hover:border-sky-300/80 hover:bg-sky-100/95"
+            className="rounded-md border border-sky-200/70 bg-sky-100 px-1.5 py-0.5 font-medium text-[#0D50AC] underline decoration-[#0D50AC]/35 underline-offset-2 transition hover:-translate-y-px hover:border-sky-300/90 hover:bg-sky-200/90"
           >
             [{destination.label}]
           </Link>
@@ -251,7 +251,7 @@ function WidgetShell({
   footer?: ReactNode;
 }) {
   return (
-    <section className="animate-panel-rise rounded-2xl border border-[#0B6381]/20 bg-gradient-to-br from-[#f5fafc]/95 to-white/98 p-3.5 shadow-[0_12px_40px_-16px_rgba(11,99,129,0.12)] backdrop-blur-[1px] transition-[box-shadow,transform] duration-300 hover:-translate-y-px hover:shadow-[0_16px_48px_-14px_rgba(11,99,129,0.16)] motion-reduce:hover:translate-y-0">
+    <section className="animate-panel-rise rounded-2xl border border-[#0B6381]/20 bg-gradient-to-br from-[#f5fafc] to-white p-3.5 shadow-[0_12px_40px_-16px_rgba(11,99,129,0.12)] transition-[box-shadow,transform] duration-300 hover:-translate-y-px hover:shadow-[0_16px_48px_-14px_rgba(11,99,129,0.16)] motion-reduce:hover:translate-y-0">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold tracking-tight text-slate-900">{title}</h3>
