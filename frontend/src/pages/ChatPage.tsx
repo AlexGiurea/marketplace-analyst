@@ -189,13 +189,13 @@ export function ChatPage() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
-  async function send() {
-    const text = input.trim();
+  async function sendMessage(textOverride?: string) {
+    const text = (textOverride ?? input).trim();
     if (!text || loading) return;
     const uid = `u-${crypto.randomUUID()}`;
     const userMessage: ChatMessage = { id: uid, role: "user", content: text };
     const history = [...messages, userMessage];
-    setInput("");
+    if (textOverride === undefined) setInput("");
     setMessages(history);
     setLoading(true);
     try {
@@ -255,6 +255,14 @@ export function ChatPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function sendDashboardPrompt(scope: "quarter" | "project") {
+    const q =
+      scope === "quarter"
+        ? "Create a dashboard for this quarter. Include the dashboard_preview widget after a brief intro."
+        : "Create a dashboard for the whole project across all loaded quarters. Include the dashboard_preview widget after a brief intro.";
+    void sendMessage(q);
   }
 
   return (
@@ -369,6 +377,26 @@ export function ChatPage() {
         </div>
 
         <footer className="stagger-chat-4 shrink-0 border-t border-white/50 bg-white/50 px-3 py-4 backdrop-blur-xl sm:px-5">
+          <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => sendDashboardPrompt("quarter")}
+              disabled={loading}
+              className="ui-btn-light rounded-xl px-3 py-2 text-xs font-semibold disabled:opacity-50"
+            >
+              Quarter dashboard
+            </button>
+            {scenario.quarters.length > 1 ? (
+              <button
+                type="button"
+                onClick={() => sendDashboardPrompt("project")}
+                disabled={loading}
+                className="ui-btn-light rounded-xl px-3 py-2 text-xs font-semibold disabled:opacity-50"
+              >
+                Project dashboard
+              </button>
+            ) : null}
+          </div>
           <div className="flex gap-2 sm:gap-3">
             <input
               type="text"
@@ -377,7 +405,7 @@ export function ChatPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  void send();
+                  void sendMessage();
                 }
               }}
               disabled={loading}
@@ -387,7 +415,7 @@ export function ChatPage() {
             />
             <button
               type="button"
-              onClick={() => void send()}
+              onClick={() => void sendMessage()}
               disabled={loading}
               className="ui-btn-primary shrink-0 rounded-2xl px-5 py-3 text-sm disabled:hover:translate-y-0"
             >

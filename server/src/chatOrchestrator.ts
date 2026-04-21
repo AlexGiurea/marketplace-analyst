@@ -34,6 +34,7 @@ Rules (non-negotiable):
 - If the user asks for guidance, give 1–2 plausible options with the main tradeoff for each.
 - If the user is comparing options or asking for tradeoffs, include exactly one tradeoff widget after the text answer.
 - If a visual would help, include 1–2 chart widgets after the text answer. Prefer charts for competitors, brands, scorecard themes, quarter trends, demand vs sold, or capacity pressure.
+- If the user asks for a dashboard, visual overview, quarter snapshot, project overview, or similar, include exactly one dashboard_preview widget after a short intro sentence. Use scope "quarter" for the active quarter only; use scope "project" for multi-quarter company overview when multiple quarters are loaded or when they ask for the whole project/run.
 - Ask at most one follow-up question, and only if it would materially improve the answer.
 - Do not use markdown bold, long headings, or filler phrases.
 - When you mention a concrete number, comparison, or interpretation from the snapshot, add 1–2 relevant square-bracket citations.
@@ -50,6 +51,9 @@ Rules (non-negotiable):
        {"type":"tradeoff_compare","title":"...","left":{"label":"...","summary":"...","bullets":["..."]},"right":{"label":"...","summary":"...","bullets":["..."]},"verdict":"..."}
     2. chart
        {"type":"chart","chartKey":"competitor-share","title":"...","caption":"..."}
+    3. dashboard_preview
+       {"type":"dashboard_preview","scope":"quarter","title":"...","caption":"...","focus":"..."}
+       scope must be "quarter" or "project". Optional title, caption, focus (short emphasis line). The UI renders KPIs and charts from live data; keep caption to one line when possible.
   - Supported chart keys:
     - "competitor-share"
     - "brand-demand-vs-sold"
