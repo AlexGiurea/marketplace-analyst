@@ -1,5 +1,8 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
+import { useDemoData } from "../context/DemoDataContext";
+import { stashCoachDashboardTransfer, type CoachDashboardTransferPayload } from "../lib/coachDashboardTransfer";
 import type { DemoScenario, DemoSnapshot } from "../types/demoSnapshot";
 import {
   MicroLineChart,
@@ -880,6 +883,25 @@ function ProjectDashboardBody({
   );
 }
 
+export function CoachDashboardModalBody({
+  widgetScope,
+  snapshot,
+  scenario,
+  activeQuarterIndex,
+}: {
+  widgetScope: "quarter" | "project";
+  snapshot: DemoSnapshot;
+  scenario?: DemoScenario;
+  activeQuarterIndex: number;
+}) {
+  const effectiveScope =
+    widgetScope === "project" && (!scenario || scenario.quarters.length < 2) ? "quarter" : widgetScope;
+  if (effectiveScope === "project") {
+    return <ProjectDashboardBody snapshot={snapshot} scenario={scenario} activeQuarterIndex={activeQuarterIndex} />;
+  }
+  return <QuarterDashboardBody snapshot={snapshot} />;
+}
+
 export function DashboardPreviewWidget({
   widget,
   context,
@@ -890,7 +912,10 @@ export function DashboardPreviewWidget({
   /** Opens the modal on mount (e.g. dev / QA). */
   initialOpen?: boolean;
 }) {
-  const { snapshot, scenario, activeQuarterIndex } = context;
+  const navigate = useNavigate();
+  const { scenario: liveScenario } = useDemoData();
+  const { snapshot, scenario: contextScenario, activeQuarterIndex } = context;
+  const scenarioForTransfer = contextScenario ?? liveScenario;
   const [open, setOpen] = useState(initialOpen);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
@@ -919,7 +944,7 @@ export function DashboardPreviewWidget({
 
   const scope = widget.scope;
   const effectiveScope =
-    scope === "project" && (!scenario || scenario.quarters.length < 2) ? "quarter" : scope;
+    scope === "project" && (!scenarioForTransfer || scenarioForTransfer.quarters.length < 2) ? "quarter" : scope;
 
   const title =
     widget.title ??
@@ -938,8 +963,8 @@ export function DashboardPreviewWidget({
   const previewNi = snapshot.accounting.netIncome;
 
   const trendPoints =
-    scenario && scenario.quarters.length > 1
-      ? scenario.quarters.map((q) => ({
+    scenarioForTransfer && scenarioForTransfer.quarters.length > 1
+      ? scenarioForTransfer.quarters.map((q) => ({
           label: q.quarter.label.replace("Quarter ", "Q"),
           value: q.accounting.revenue,
         }))
@@ -948,12 +973,36 @@ export function DashboardPreviewWidget({
           { label: snapshot.quarter.label.replace("Quarter ", "Q"), value: previewRevenue },
         ];
 
-  const modalContent =
-    effectiveScope === "project" ? (
-      <ProjectDashboardBody snapshot={snapshot} scenario={scenario} activeQuarterIndex={activeQuarterIndex} />
-    ) : (
-      <QuarterDashboardBody snapshot={snapshot} />
-    );
+  const modalContent = (
+    <CoachDashboardModalBody
+      widgetScope={scope}
+      snapshot={snapshot}
+      scenario={contextScenario}
+      activeQuarterIndex={activeQuarterIndex}
+    />
+  );
+
+  const openFullDashboardInNewTab = () => {
+    const tid = crypto.randomUUID();
+    const payload: CoachDashboardTransferPayload = {
+      v: 1,
+      scenario: scenarioForTransfer,
+      activeQuarterIndex,
+      scope: effectiveScope,
+    };
+    try {
+      stashCoachDashboardTransfer(tid, payload);
+    } catch {
+      /* private mode / quota */
+    }
+    const url = new URL("/dashboard", window.location.origin);
+    url.searchParams.set("tid", tid);
+    url.searchParams.set("scope", effectiveScope);
+    url.searchParams.set("quarter", String(activeQuarterIndex + 1));
+    window.open(url.toString(), "_blank", "noopener,noreferrer");
+    setOpen(false);
+    navigate("/", { replace: true });
+  };
 
   return (
     <>
@@ -1019,14 +1068,25 @@ export function DashboardPreviewWidget({
                     {caption}
                   </p>
                 </div>
-                <button
-                  ref={closeBtnRef}
-                  type="button"
-                  className="ui-btn-light shrink-0 rounded-xl px-4 py-2 text-xs font-semibold"
-                  onClick={() => setOpen(false)}
-                >
-                  Close
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/70 text-lg leading-none text-slate-800 shadow-sm backdrop-blur-md transition hover:bg-white/90"
+                    title="Open full dashboard in a new tab (this tab returns to AI Coach)"
+                    aria-label="Open full dashboard in a new tab; this tab returns to AI Coach"
+                    onClick={openFullDashboardInNewTab}
+                  >
+                    🪟
+                  </button>
+                  <button
+                    ref={closeBtnRef}
+                    type="button"
+                    className="ui-btn-light rounded-xl px-4 py-2 text-xs font-semibold"
+                    onClick={() => setOpen(false)}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-5">{modalContent}</div>
             </div>

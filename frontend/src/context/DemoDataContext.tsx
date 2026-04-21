@@ -12,6 +12,8 @@ type DemoDataContextValue = {
   snapshot: DemoSnapshot;
   randomize: () => void;
   reset: () => void;
+  /** Replace scenario + quarter (e.g. full dashboard opened in a new tab). */
+  hydrateScenario: (nextScenario: DemoScenario, quarterIndex: number) => void;
 };
 
 const DemoDataContext = createContext<DemoDataContextValue | null>(null);
@@ -35,6 +37,12 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
     setActiveQuarterIndex(LAST_QUARTER_INDEX);
   }, []);
 
+  const hydrateScenario = useCallback((nextScenario: DemoScenario, quarterIndex: number) => {
+    setScenario(nextScenario);
+    const max = Math.max(0, nextScenario.quarters.length - 1);
+    setActiveQuarterIndex(Math.min(Math.max(0, quarterIndex), max));
+  }, []);
+
   const value = useMemo(
     () => ({
       scenario,
@@ -43,8 +51,9 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
       snapshot,
       randomize,
       reset,
+      hydrateScenario,
     }),
-    [scenario, activeQuarterIndex, snapshot, randomize, reset],
+    [scenario, activeQuarterIndex, snapshot, randomize, reset, hydrateScenario],
   );
 
   return <DemoDataContext.Provider value={value}>{children}</DemoDataContext.Provider>;
