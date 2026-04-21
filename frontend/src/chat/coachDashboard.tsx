@@ -1,7 +1,17 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { DemoScenario, DemoSnapshot } from "../types/demoSnapshot";
-import { MicroLineChart, MiniGroupedBarChart, MiniLineChart, shortMoney } from "./miniCharts";
+import {
+  MicroLineChart,
+  MiniAreaChart,
+  MiniDonutChart,
+  MiniGroupedBarChart,
+  MiniHorizontalBarChart,
+  MiniLineChart,
+  MiniStackedHorizontalBar,
+  shortMoney,
+  type DonutSlice,
+} from "./miniCharts";
 
 export type DashboardPreviewConfig = {
   type: "dashboard_preview";
@@ -90,11 +100,112 @@ function scorecardBarCategories(rows: { theme: string }[]): string[] {
   return rows.map((row) => row.theme.replace(/ & /g, "\n").split(" ")[0] ?? row.theme);
 }
 
+const DONUT_PALETTE = ["#0D50AC", "#0b6381", "#7c3aed", "#b45309", "#64748b", "#94a3b8", "#cbd5e1"];
+
+function shareDonutSlices(snapshot: DemoSnapshot): DonutSlice[] {
+  const us = snapshot.performance.overallSharePct;
+  const comps = snapshot.performance.competitors.slice(0, 4);
+  const assigned = us + comps.reduce((s, c) => s + c.sharePct, 0);
+  const rest = Math.max(0, 100 - assigned);
+  const out: DonutSlice[] = [
+    { label: snapshot.company.name, value: us, color: DONUT_PALETTE[0] },
+    ...comps.map((c, i) => ({
+      label: c.name,
+      value: c.sharePct,
+      color: DONUT_PALETTE[(i % (DONUT_PALETTE.length - 2)) + 1],
+    })),
+  ];
+  if (rest > 0.4) out.push({ label: "Other", value: rest, color: DONUT_PALETTE[DONUT_PALETTE.length - 1] });
+  return out;
+}
+
+function quarterInsightBullets(snapshot: DemoSnapshot): string[] {
+  const brands = snapshot.performance.brands;
+  const best = brands.length ? brands.reduce((a, b) => (a.brandProfit >= b.brandProfit ? a : b), brands[0]) : null;
+  const stockouts = brands.filter((b) => b.stockout).length;
+  const seg = snapshot.performance.segmentDemand;
+  const tightest =
+    seg.length > 0
+      ? seg.reduce(
+          (bestRow, row) => {
+            const gap = row.industryUnits > 0 ? row.teamUnits / row.industryUnits : 0;
+            const bestGap =
+              bestRow.industryUnits > 0 ? bestRow.teamUnits / bestRow.industryUnits : 0;
+            return gap < bestGap ? row : bestRow;
+          },
+          seg[0],
+        )
+      : null;
+  const sc = snapshot.balancedScorecard;
+  const mover =
+    sc.length > 0 ? sc.reduce((a, b) => (a.score - a.priorScore >= b.score - b.priorScore ? a : b), sc[0]) : null;
+
+  const bullets: string[] = [];
+  if (best && brands.length) {
+    bullets.push(
+      `Lead profit engine: ${best.name} at ${shortMoney(best.brandProfit)} brand profit — watch demand (${best.demand.toLocaleString()} units) vs sold (${best.sold.toLocaleString()}).`,
+    );
+  }
+  if (stockouts > 0) {
+    bullets.push(`${stockouts} brand${stockouts === 1 ? "" : "s"} flagged stockout — revisit production and inventory before the next decision round.`);
+  } else {
+    bullets.push("No brand stockouts this quarter — fulfillment kept pace with demand.");
+  }
+  if (tightest && seg.length) {
+    bullets.push(
+      `Tightest segment vs industry demand: ${tightest.segment} (team ${tightest.teamUnits.toLocaleString()} vs industry ${tightest.industryUnits.toLocaleString()} units).`,
+    );
+  }
+  if (mover && sc.length) {
+    bullets.push(
+      `Biggest scorecard move: ${mover.theme.replace(/ & /g, " & ")} (${mover.priorScore} → ${mover.score}, ${mover.trend}).`,
+    );
+  }
+  return bullets.slice(0, 4);
+}
+
+function projectTrendInsights(
+  scenario: NonNullable<DemoScenario>,
+  activeQuarterIndex: number,
+): string[] {
+  const q = scenario.quarters;
+  const cur = q[activeQuarterIndex];
+  const prev = q[Math.max(0, activeQuarterIndex - 1)];
+  const rev = cur.accounting.revenue - prev.accounting.revenue;
+  const ni = cur.accounting.netIncome - prev.accounting.netIncome;
+  const bestRev = q.reduce((best, row, i) => (row.accounting.revenue > best.val ? { i, val: row.accounting.revenue } : best), {
+    i: 0,
+    val: q[0].accounting.revenue,
+  });
+  const bullets: string[] = [];
+  bullets.push(
+    `Active window is ${cur.quarter.label}: revenue ${shortMoney(cur.accounting.revenue)}, net income ${shortMoney(cur.accounting.netIncome)}, ending cash ${shortMoney(cur.accounting.endingCash)}.`,
+  );
+  bullets.push(
+    `Sequential change vs prior quarter: revenue ${rev >= 0 ? "+" : ""}${shortMoney(rev)}, net income ${ni >= 0 ? "+" : ""}${shortMoney(ni)}.`,
+  );
+  bullets.push(
+    `Peak revenue quarter in this run: ${q[bestRev.i].quarter.label} at ${shortMoney(bestRev.val)} — compare mix, share, and capacity in the quarter table.`,
+  );
+  return bullets;
+}
+
 type QuarterTab = "overview" | "performance" | "financials" | "operations";
 
 function QuarterDashboardBody({ snapshot }: { snapshot: DemoSnapshot }) {
   const [tab, setTab] = useState<QuarterTab>("overview");
   const brands = snapshot.performance.brands;
+  const insightBullets = quarterInsightBullets(snapshot);
+  const ad = snapshot.marketing.advertisingSpend;
+  const adTotal = ad.nationalMedia + ad.regionalMedia + ad.localMedia + ad.internet;
+  const topRevenueBrands = [...brands]
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 6)
+    .map((b) => ({ label: b.name, value: b.revenue }));
+  const strategicPts = snapshot.performance.strategicGraph.map((p) => ({
+    label: p.quarterLabel.replace("Quarter ", "Q"),
+    value: p.marketAppealIndex,
+  }));
 
   const kpiRow = (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -128,42 +239,145 @@ function QuarterDashboardBody({ snapshot }: { snapshot: DemoSnapshot }) {
       {tabBar}
       {tab === "overview" && (
         <div className="dashboard-animate-children space-y-4">
-          {kpiRow}
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <div className="dashboard-chart-card">
-              <p className="mb-2 text-[11px] font-semibold text-slate-800">Brand profit</p>
-              <MiniGroupedBarChart
-                wide
-                categories={brands.map((b) => b.name)}
-                series={[{ label: "Profit", color: "#0b6381", values: brands.map((b) => b.brandProfit) }]}
-                formatter={shortMoney}
-              />
+          <div className="dashboard-unified-panel space-y-5">
+            {kpiRow}
+            <div className="dashboard-executive space-y-3">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[#0B6381]/90">Executive overview</p>
+              <p className="text-sm leading-relaxed text-slate-800">
+                <span className="font-semibold text-slate-900">{snapshot.company.name}</span> — {snapshot.quarter.label}. Strategy:{" "}
+                {snapshot.company.strategyOneLiner} Target segments: {snapshot.company.targetSegments.join(", ")}. This quarter closed at{" "}
+                <span className="font-semibold tabular-nums">{shortMoney(snapshot.accounting.revenue)}</span> revenue,{" "}
+                <span className="font-semibold tabular-nums">{shortMoney(snapshot.accounting.netIncome)}</span> net income, and{" "}
+                <span className="font-semibold">{snapshot.performance.overallSharePct.toFixed(1)}%</span> overall share with a cumulative scorecard index of{" "}
+                {snapshot.quarter.cumulativeBalancedScorecardIndex}.
+              </p>
+              <ul className="grid gap-2.5 sm:grid-cols-2">
+                {insightBullets.map((line, bi) => (
+                  <li
+                    key={bi}
+                    className="flex gap-2 rounded-lg border border-slate-100/90 bg-slate-50/80 px-3 py-2 text-[12px] leading-snug text-slate-700"
+                  >
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0D50AC]" aria-hidden />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+              {snapshot.performance.marketImpactNote ? (
+                <p className="rounded-lg border border-sky-100/90 bg-sky-50/80 px-3 py-2 text-[12px] leading-relaxed text-slate-700">
+                  <span className="font-semibold text-slate-900">Market impact: </span>
+                  {snapshot.performance.marketImpactNote}
+                </p>
+              ) : null}
+              <p className="text-[11px] leading-relaxed text-slate-600">
+                <span className="font-semibold text-slate-800">Go-to-market: </span>
+                {snapshot.marketing.tacticalSummary.slice(0, 280)}
+                {snapshot.marketing.tacticalSummary.length > 280 ? "…" : ""}
+              </p>
             </div>
-            <div className="dashboard-chart-card">
-              <p className="mb-2 text-[11px] font-semibold text-slate-800">Segment demand (team vs industry)</p>
-              <MiniGroupedBarChart
-                wide
-                categories={snapshot.performance.segmentDemand.map((s) => s.segment)}
-                series={[
-                  {
-                    label: "Industry",
-                    color: "#cbd5e1",
-                    values: snapshot.performance.segmentDemand.map((s) => s.industryUnits),
-                  },
-                  {
-                    label: "Team",
-                    color: "#0D50AC",
-                    values: snapshot.performance.segmentDemand.map((s) => s.teamUnits),
-                  },
-                ]}
-              />
+
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <div className="dashboard-chart-card">
+                <p className="mb-1 text-[11px] font-semibold text-slate-800">Share composition (team + top competitors)</p>
+                <p className="mb-2 text-[10px] text-slate-500">Hover segments to spotlight — tooltips show exact share points.</p>
+                <MiniDonutChart wide slices={shareDonutSlices(snapshot)} formatter={(v) => `${v.toFixed(1)}%`} />
+              </div>
+              <div className="dashboard-chart-card">
+                <p className="mb-1 text-[11px] font-semibold text-slate-800">Advertising mix</p>
+                <p className="mb-2 text-[10px] text-slate-500">
+                  Stacked by spend ({adTotal > 0 ? shortMoney(adTotal) : "—"} total). Hover to compare channel weight.
+                </p>
+                <MiniStackedHorizontalBar
+                  wide
+                  segments={[
+                    { label: "National", value: ad.nationalMedia, color: "#0D50AC" },
+                    { label: "Regional", value: ad.regionalMedia, color: "#38bdf8" },
+                    { label: "Local", value: ad.localMedia, color: "#0b6381" },
+                    { label: "Internet", value: ad.internet, color: "#a78bfa" },
+                  ]}
+                  formatter={shortMoney}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <div className="dashboard-chart-card">
+                <p className="mb-1 text-[11px] font-semibold text-slate-800">Brand profit (interactive)</p>
+                <p className="mb-2 text-[10px] text-slate-500">Hover a brand cluster to dim the rest — values in tooltips.</p>
+                <MiniGroupedBarChart
+                  wide
+                  interactive
+                  categories={brands.map((b) => b.name)}
+                  series={[{ label: "Profit", color: "#0b6381", values: brands.map((b) => b.brandProfit) }]}
+                  formatter={shortMoney}
+                />
+              </div>
+              <div className="dashboard-chart-card">
+                <p className="mb-1 text-[11px] font-semibold text-slate-800">Top brands by revenue</p>
+                <p className="mb-2 text-[10px] text-slate-500">Horizontal ranking — hover bars to highlight.</p>
+                <MiniHorizontalBarChart wide rows={topRevenueBrands} color="#0D50AC" formatter={shortMoney} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <div className="dashboard-chart-card">
+                <p className="mb-2 text-[11px] font-semibold text-slate-800">Segment demand (team vs industry)</p>
+                <MiniGroupedBarChart
+                  wide
+                  interactive
+                  categories={snapshot.performance.segmentDemand.map((s) => s.segment)}
+                  series={[
+                    {
+                      label: "Industry",
+                      color: "#cbd5e1",
+                      values: snapshot.performance.segmentDemand.map((s) => s.industryUnits),
+                    },
+                    {
+                      label: "Team",
+                      color: "#0D50AC",
+                      values: snapshot.performance.segmentDemand.map((s) => s.teamUnits),
+                    },
+                  ]}
+                />
+              </div>
+              <div className="dashboard-chart-card">
+                {strategicPts.length >= 2 ? (
+                  <>
+                    <p className="mb-1 text-[11px] font-semibold text-slate-800">Strategic momentum — market appeal</p>
+                    <p className="mb-2 text-[10px] text-slate-500">Area view of the appeal index across recent quarters (hover points).</p>
+                    <MiniAreaChart
+                      wide
+                      points={strategicPts}
+                      color="#0b6381"
+                      formatter={(v) => String(Math.round(v))}
+                      highlightIndex={strategicPts.length - 1}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <p className="mb-1 text-[11px] font-semibold text-slate-800">Balanced scorecard — current quarter</p>
+                    <p className="mb-2 text-[10px] text-slate-500">Theme scores (horizontal bars) when the multi-quarter strategy series is short.</p>
+                    <MiniHorizontalBarChart
+                      wide
+                      rows={snapshot.balancedScorecard.slice(0, 8).map((r) => ({
+                        label: r.theme.length > 28 ? `${r.theme.slice(0, 26)}…` : r.theme,
+                        value: r.score,
+                      }))}
+                      color="#0f766e"
+                      formatter={(v) => `${Math.round(v)} pts`}
+                    />
+                  </>
+                )}
+              </div>
             </div>
           </div>
+
           <BridgeFlow snapshot={snapshot} />
           <div className="dashboard-chart-card">
-            <p className="mb-2 text-[11px] font-semibold text-slate-800">Balanced scorecard themes (current vs prior)</p>
+            <p className="mb-1 text-[11px] font-semibold text-slate-800">Balanced scorecard themes (current vs prior)</p>
+            <p className="mb-2 text-[10px] text-slate-500">Grouped view to compare quarter-over-quarter theme movement.</p>
             <MiniGroupedBarChart
               wide
+              interactive
               categories={scorecardBarCategories(snapshot.balancedScorecard)}
               series={[
                 { label: "Current", color: "#0D50AC", values: snapshot.balancedScorecard.map((r) => r.score) },
@@ -341,11 +555,16 @@ function ProjectDashboardBody({
   }
 
   const qLabel = (q: (typeof scenario.quarters)[0]) => q.quarter.label.replace("Quarter ", "Q");
-  const revenuePts = scenario.quarters.map((q) => ({ label: qLabel(q), value: q.accounting.revenue }));
   const niPts = scenario.quarters.map((q) => ({ label: qLabel(q), value: q.accounting.netIncome }));
   const sharePts = scenario.quarters.map((q) => ({ label: qLabel(q), value: q.performance.overallSharePct }));
-  const cashPts = scenario.quarters.map((q) => ({ label: qLabel(q), value: q.accounting.endingCash }));
   const scPts = scenario.quarters.map((q) => ({ label: qLabel(q), value: q.quarter.cumulativeBalancedScorecardIndex }));
+  const projectBullets = projectTrendInsights(scenario, activeQuarterIndex);
+  const revBarCategories = scenario.quarters.map((q) => qLabel(q));
+  const revBarValues = scenario.quarters.map((q) => q.accounting.revenue);
+  const cashRows = scenario.quarters.map((q) => ({
+    label: qLabel(q),
+    value: q.accounting.endingCash,
+  }));
 
   const prevIdx = Math.max(0, activeQuarterIndex - 1);
   const cur = scenario.quarters[activeQuarterIndex];
@@ -379,33 +598,64 @@ function ProjectDashboardBody({
 
       {tab === "trends" && (
         <div className="dashboard-animate-children space-y-4">
-          {kpiProject}
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <div className="dashboard-chart-card">
-              <p className="mb-2 text-[11px] font-semibold text-slate-800">Revenue by quarter</p>
-              <MiniLineChart wide points={revenuePts} formatter={shortMoney} highlightIndex={hi} />
+          <div className="dashboard-unified-panel space-y-5">
+            {kpiProject}
+            <div className="dashboard-executive space-y-3">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[#0B6381]/90">Project narrative</p>
+              <p className="text-sm leading-relaxed text-slate-800">
+                <span className="font-semibold text-slate-900">{snapshot.company.name}</span> — multi-quarter trajectory. The charts below mix{" "}
+                <span className="font-medium">bars, areas, and lines</span> so you can read momentum (shape) and absolute scale (bars) without scanning four identical
+                line panels.
+              </p>
+              <ul className="space-y-2">
+                {projectBullets.map((line, pi) => (
+                  <li key={pi} className="flex gap-2 text-[12px] leading-snug text-slate-700">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0b6381]" aria-hidden />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="dashboard-chart-card">
-              <p className="mb-2 text-[11px] font-semibold text-slate-800">Net income by quarter</p>
-              <MiniLineChart wide points={niPts} formatter={shortMoney} color="#0f766e" highlightIndex={hi} />
-            </div>
-            <div className="dashboard-chart-card">
-              <p className="mb-2 text-[11px] font-semibold text-slate-800">Overall share %</p>
-              <MiniLineChart
-                wide
-                points={sharePts}
-                formatter={(v) => `${v.toFixed(1)}%`}
-                color="#7c3aed"
-                highlightIndex={hi}
-              />
-            </div>
-            <div className="dashboard-chart-card">
-              <p className="mb-2 text-[11px] font-semibold text-slate-800">Ending cash</p>
-              <MiniLineChart wide points={cashPts} formatter={shortMoney} color="#b45309" highlightIndex={hi} />
+
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <div className="dashboard-chart-card">
+                <p className="mb-1 text-[11px] font-semibold text-slate-800">Revenue by quarter (bars)</p>
+                <p className="mb-2 text-[10px] text-slate-500">Compare absolute quarter size — hover to dim other periods.</p>
+                <MiniGroupedBarChart
+                  wide
+                  interactive
+                  categories={revBarCategories}
+                  series={[{ label: "Revenue", color: "#0D50AC", values: revBarValues }]}
+                  formatter={shortMoney}
+                />
+              </div>
+              <div className="dashboard-chart-card">
+                <p className="mb-1 text-[11px] font-semibold text-slate-800">Net income trajectory (area)</p>
+                <p className="mb-2 text-[10px] text-slate-500">Filled trend highlights operating leverage between quarters.</p>
+                <MiniAreaChart wide points={niPts} formatter={shortMoney} color="#0f766e" highlightIndex={hi} />
+              </div>
+              <div className="dashboard-chart-card">
+                <p className="mb-1 text-[11px] font-semibold text-slate-800">Overall share % (line)</p>
+                <p className="mb-2 text-[10px] text-slate-500">Point-to-point market position — highlighted quarter matches the KPI strip.</p>
+                <MiniLineChart
+                  wide
+                  points={sharePts}
+                  formatter={(v) => `${v.toFixed(1)}%`}
+                  color="#7c3aed"
+                  highlightIndex={hi}
+                />
+              </div>
+              <div className="dashboard-chart-card">
+                <p className="mb-1 text-[11px] font-semibold text-slate-800">Ending cash by quarter</p>
+                <p className="mb-2 text-[10px] text-slate-500">Horizontal bars make liquidity easy to compare at a glance.</p>
+                <MiniHorizontalBarChart wide rows={cashRows} color="#b45309" formatter={shortMoney} />
+              </div>
             </div>
           </div>
+
           <div className="dashboard-chart-card">
-            <p className="mb-2 text-[11px] font-semibold text-slate-800">Cumulative balanced scorecard index</p>
+            <p className="mb-1 text-[11px] font-semibold text-slate-800">Cumulative balanced scorecard index</p>
+            <p className="mb-2 text-[10px] text-slate-500">Line view for the long-running cumulative index (distinct from quarterly bars in the quarter dashboard).</p>
             <MiniLineChart
               wide
               points={scPts}

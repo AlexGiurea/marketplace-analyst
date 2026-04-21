@@ -137,6 +137,14 @@
     @apply border-slate-300/90 shadow-[0_12px_40px_-18px_rgba(15,23,42,0.12)];
   }
 
+  .dashboard-unified-panel {
+    @apply rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white/95 via-slate-50/40 to-sky-50/30 p-4 shadow-sm backdrop-blur-sm sm:p-5;
+  }
+
+  .dashboard-executive {
+    @apply rounded-xl border border-slate-200/70 bg-white/90 p-4 shadow-sm sm:p-5;
+  }
+
   .dashboard-animate-children > * {
     animation: dashboard-section-in 0.44s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
