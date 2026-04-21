@@ -1057,7 +1057,7 @@ export function DashboardPreviewWidget({
               aria-modal="true"
               aria-labelledby={titleId}
               aria-describedby={descId}
-              className="dashboard-modal-shell relative z-[101] flex max-h-[min(94dvh,920px)] w-full max-w-[min(97vw,1400px)] min-w-0 flex-col overflow-hidden rounded-t-2xl border border-white/50 bg-gradient-to-b from-[#eef6f9] via-white to-[#f8fafc] shadow-[0_32px_100px_-24px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:rounded-2xl"
+              className="dashboard-modal-shell relative z-[101] flex h-[70dvh] max-h-[70dvh] w-[70vw] max-w-[70vw] min-w-0 flex-col overflow-hidden rounded-t-2xl border border-white/50 bg-gradient-to-b from-[#eef6f9] via-white to-[#f8fafc] shadow-[0_32px_100px_-24px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:rounded-2xl"
             >
               <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/50 bg-white/60 px-4 py-3 backdrop-blur-md sm:px-6">
                 <div className="min-w-0">
@@ -1071,12 +1071,25 @@ export function DashboardPreviewWidget({
                 <div className="flex shrink-0 items-center gap-2">
                   <button
                     type="button"
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/70 text-lg leading-none text-slate-800 shadow-sm backdrop-blur-md transition hover:bg-white/90"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#0B6381]/22 bg-white/75 text-[#0B6381] shadow-sm backdrop-blur-md transition hover:border-[#0B6381]/38 hover:bg-[#0B6381]/[0.06]"
                     title="Open full dashboard in a new tab (this tab returns to AI Coach)"
                     aria-label="Open full dashboard in a new tab; this tab returns to AI Coach"
                     onClick={openFullDashboardInNewTab}
                   >
-                    🪟
+                    <svg
+                      className="h-[15px] w-[15px] shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="M14 3h7v7" />
+                      <path d="M10 14 21 3" />
+                      <path d="M21 14v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6" />
+                    </svg>
                   </button>
                   <button
                     ref={closeBtnRef}
