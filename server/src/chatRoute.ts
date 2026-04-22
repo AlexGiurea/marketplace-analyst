@@ -1,6 +1,8 @@
 import type { DemoScenario, DemoSnapshot } from "../../frontend/src/types/demoSnapshot.js";
 import { materializeSnapshot } from "../../frontend/src/data/demoScenario.js";
 import { runChat } from "./chatOrchestrator.js";
+import { checkChatRateLimit } from "./chatRateLimit.js";
+import { checkChatPayloadGuards } from "./chatRequestLimits.js";
 
 export function getModel(): string {
   return process.env.OPENAI_MODEL || "gpt-5.4";
@@ -20,8 +22,16 @@ function isDemoScenario(x: unknown): x is DemoScenario {
   return Array.isArray(o.quarters) && o.quarters.length > 0 && typeof o.company === "object";
 }
 
+export type HandleChatResult = {
+  status: number;
+  json: Record<string, unknown>;
+  headers?: Record<string, string>;
+};
+
+export type HandleChatOptions = { clientKey?: string };
+
 /** Shared JSON handler for POST /api/chat (Express + Vercel). */
-export async function handleChatPost(body: unknown): Promise<{ status: number; json: Record<string, unknown> }> {
+export async function handleChatPost(body: unknown, options?: HandleChatOptions): Promise<HandleChatResult> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) {
     return {
@@ -29,6 +39,24 @@ export async function handleChatPost(body: unknown): Promise<{ status: number; j
       json: {
         error: "OPENAI_API_KEY is not set. Copy server/.env.example to server/.env and add your key.",
       },
+    };
+  }
+
+  const guards = checkChatPayloadGuards(body);
+  if (!guards.ok) {
+    return { status: guards.status, json: guards.json };
+  }
+
+  const clientKey = options?.clientKey?.trim() || "ip:unknown";
+  const limit = checkChatRateLimit(clientKey);
+  if (!limit.ok) {
+    return {
+      status: 429,
+      json: {
+        error: "Too many chat requests. Please wait a moment and try again.",
+        code: "rate_limit",
+      },
+      headers: { "Retry-After": String(limit.retryAfterSec) },
     };
   }
 

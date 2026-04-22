@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import cors from "cors";
 import express from "express";
+import { getClientKeyFromNodeLikeRequest } from "./clientKey.js";
 import { handleChatPost, getHealthPayload } from "./chatRoute.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -15,6 +16,7 @@ const isProd = process.env.NODE_ENV === "production";
 
 function createApp(): express.Express {
   const app = express();
+  app.set("trust proxy", 1);
   app.use(cors({ origin: true }));
   app.use(express.json({ limit: "2mb" }));
 
@@ -23,7 +25,13 @@ function createApp(): express.Express {
   });
 
   app.post("/api/chat", async (req, res) => {
-    const out = await handleChatPost(req.body);
+    const clientKey = getClientKeyFromNodeLikeRequest(req);
+    const out = await handleChatPost(req.body, { clientKey });
+    if (out.headers) {
+      for (const [k, v] of Object.entries(out.headers)) {
+        res.setHeader(k, v);
+      }
+    }
     res.status(out.status).json(out.json);
   });
 

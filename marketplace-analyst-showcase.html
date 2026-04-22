@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Marketplace Analyst — Architecture & Capabilities</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --ink: #0b1020;
+    --ink-2: #151a33;
+    --line: rgba(255,255,255,0.08);
+    --accent: #7aa2ff;
+    --accent-2: #8be0c8;
+    --warn: #ffb86b;
+    --pill: rgba(122,162,255,0.12);
+  }
+  html, body { background: radial-gradient(1200px 800px at 10% -10%, #1b2452 0%, #0b1020 45%, #070a18 100%) fixed; color: #e8ecff; font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .glass { background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)); border: 1px solid var(--line); border-radius: 16px; backdrop-filter: blur(8px); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 12px; border-radius: 999px; background: var(--pill); color: #cfd8ff; border: 1px solid rgba(122,162,255,0.25); }
+  .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  .grad-text { background: linear-gradient(90deg, #c9d4ff 0%, #a6f0d7 60%, #ffd7a8 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: -1px -1px;
+  }
+  .card-hover { transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+  .card-hover:hover { transform: translateY(-2px); border-color: rgba(122,162,255,0.45); }
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+  /* Architecture SVG hover glow */
+  .node { transition: filter .2s ease, transform .2s ease; }
+  .node:hover { filter: drop-shadow(0 0 12px rgba(122,162,255,0.5)); }
+
+  /* Flow step number */
+  .step-num {
+    width: 28px; height: 28px; border-radius: 999px;
+    background: linear-gradient(135deg, #7aa2ff, #8be0c8);
+    color: #0b1020; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+
+  .pill-row > * { flex: 0 0 auto; }
+
+  /* Tag for categories */
+  .tag {
+    font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;
+    letter-spacing: 0.02em; text-transform: uppercase;
+  }
+  .tag-b { background: rgba(122,162,255,0.12); color: #b7c8ff; border: 1px solid rgba(122,162,255,0.3); }
+  .tag-g { background: rgba(139,224,200,0.12); color: #b6f0db; border: 1px solid rgba(139,224,200,0.3); }
+  .tag-o { background: rgba(255,184,107,0.12); color: #ffd4a8; border: 1px solid rgba(255,184,107,0.3); }
+  .tag-p { background: rgba(204,153,255,0.12); color: #e4c9ff; border: 1px solid rgba(204,153,255,0.3); }
+
+  /* Print friendliness */
+  @media print {
+    html, body { background: white; color: black; }
+    .glass { background: white; border-color: #ddd; }
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ================= HERO ================= -->
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 grid-bg opacity-60 pointer-events-none"></div>
+  <div class="max-w-7xl mx-auto px-6 pt-14 pb-10 relative">
+    <div class="flex items-center gap-3 text-sm">
+      <span class="chip"><span class="dot"></span> Live demo · marketplace-analyst.vercel.app</span>
+      <span class="chip" style="background: rgba(139,224,200,0.1); border-color: rgba(139,224,200,0.3); color: #b6f0db;">AI coach for business simulation</span>
+      <span class="chip" style="background: rgba(255,184,107,0.1); border-color: rgba(255,184,107,0.3); color: #ffd4a8;">Student innovation pitch</span>
+    </div>
+
+    <h1 class="mt-6 text-5xl md:text-6xl font-bold tracking-tight grad-text">
+      Marketplace Analyst
+    </h1>
+    <p class="mt-4 max-w-3xl text-lg md:text-xl text-white/80 leading-relaxed">
+      A web app that pairs a <em>Marketplace<sup>®</sup>-style</em> bikes-strategy simulation with a grounded AI coach.
+      The coach answers in plain language while staying anchored to the <strong>current quarter snapshot</strong>:
+      KPIs, brands, competitors, manufacturing, finance, and scorecard themes are compiled into retrievable
+      text chunks, and the model calls <strong>tools</strong> to pull exact figures from the live data — so it
+      never invents numbers.
+    </p>
+
+    <div class="mt-6 flex flex-wrap gap-2 pill-row">
+      <span class="chip">React + Vite + Tailwind</span>
+      <span class="chip">Node + Express</span>
+      <span class="chip">OpenAI Responses API</span>
+      <span class="chip">Function tools</span>
+      <span class="chip">Lexical retrieval</span>
+      <span class="chip">Vercel serverless</span>
+      <span class="chip">TypeScript</span>
+      <span class="chip">Vitest</span>
+    </div>
+
+    <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="glass p-5 card-hover">
+        <div class="tag tag-b">Purpose</div>
+        <h3 class="mt-3 text-lg font-semibold">Decision support, not decision maker</h3>
+        <p class="mt-2 text-sm text-white/70">Helps learners explore tradeoffs — volume vs margin, capacity vs demand, share vs profitability — without outsourcing judgment.</p>
+      </div>
+      <div class="glass p-5 card-hover">
+        <div class="tag tag-g">Trust</div>
+        <h3 class="mt-3 text-lg font-semibold">Grounded in the live snapshot</h3>
+        <p class="mt-2 text-sm text-white/70">Structured fields compile into text chunks; lexical retrieval routes context; function tools return exact figures from the real snapshot.</p>
+      </div>
+      <div class="glass p-5 card-hover">
+        <div class="tag tag-o">Experience</div>
+        <h3 class="mt-3 text-lg font-semibold">Chat + workspace, one port</h3>
+        <p class="mt-2 text-sm text-white/70">AI Coach chat alongside a 7-module workspace (Performance, Marketing, Sales, Manufacturing, HR, Accounting, Finance). One Node process in dev.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ARCHITECTURE ================= -->
+<section class="max-w-7xl mx-auto px-6 py-12">
+  <div class="flex items-end justify-between flex-wrap gap-4">
+    <div>
+      <div class="tag tag-b">Architecture</div>
+      <h2 class="mt-2 text-3xl font-bold">How a question becomes a grounded answer</h2>
+      <p class="mt-2 text-white/70 max-w-2xl text-sm">The React app posts the scenario + chat turns to <span class="mono">/api/chat</span>. The server compiles knowledge, retrieves relevant chunks, then runs an OpenAI Responses loop where the model may call snapshot-backed function tools before composing the final answer with citations and optional widgets.</p>
+    </div>
+    <div class="flex gap-2">
+      <span class="chip">Same-origin dev on port 5173</span>
+      <span class="chip">Vercel: <span class="mono">api/chat.ts</span> + <span class="mono">api/health.ts</span></span>
+    </div>
+  </div>
+
+  <div class="glass mt-6 p-6 overflow-x-auto">
+    <svg viewBox="0 0 1200 460" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" aria-label="Architecture diagram">
+      <defs>
+        <linearGradient id="g-front" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="#7aa2ff" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#7aa2ff" stop-opacity="0.05"/>
+        </linearGradient>
+        <linearGradient id="g-srv" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="#8be0c8" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#8be0c8" stop-opacity="0.05"/>
+        </linearGradient>
+        <linearGradient id="g-ai" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="#ffb86b" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#ffb86b" stop-opacity="0.05"/>
+        </linearGradient>
+        <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#b7c8ff"/>
+        </marker>
+        <marker id="arrow-g" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#b6f0db"/>
+        </marker>
+        <marker id="arrow-o" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#ffd4a8"/>
+        </marker>
+      </defs>
+
+      <!-- Column 1: Frontend -->
+      <g class="node">
+        <rect x="20" y="30" width="260" height="380" rx="14" fill="url(#g-front)" stroke="rgba(122,162,255,0.5)" />
+        <text x="40" y="60" fill="#cfd8ff" font-weight="700" font-size="14">FRONTEND · React + Vite</text>
+        <text x="40" y="80" fill="#aab5e6" font-size="11">frontend/src</text>
+
+        <rect x="40" y="100" width="220" height="60" rx="10" fill="rgba(122,162,255,0.12)" stroke="rgba(122,162,255,0.35)"/>
+        <text x="55" y="125" fill="#e8ecff" font-size="13" font-weight="600">ChatPage · AI Coach</text>
+        <text x="55" y="145" fill="#aab5e6" font-size="11">coachWidgets renders charts + tradeoffs</text>
+
+        <rect x="40" y="170" width="220" height="60" rx="10" fill="rgba(122,162,255,0.12)" stroke="rgba(122,162,255,0.35)"/>
+        <text x="55" y="195" fill="#e8ecff" font-size="13" font-weight="600">QuarterDashboardPage</text>
+        <text x="55" y="215" fill="#aab5e6" font-size="11">7 workspace modules, citation links</text>
+
+        <rect x="40" y="240" width="220" height="60" rx="10" fill="rgba(122,162,255,0.12)" stroke="rgba(122,162,255,0.35)"/>
+        <text x="55" y="265" fill="#e8ecff" font-size="13" font-weight="600">DemoScenario state</text>
+        <text x="55" y="285" fill="#aab5e6" font-size="11">active quarter, snapshot materialized client-side</text>
+
+        <rect x="40" y="310" width="220" height="80" rx="10" fill="rgba(122,162,255,0.08)" stroke="rgba(122,162,255,0.25)" stroke-dasharray="4 3"/>
+        <text x="55" y="335" fill="#e8ecff" font-size="12" font-weight="600">fetch("/api/chat")</text>
+        <text x="55" y="353" fill="#aab5e6" font-size="11">body: messages + scenario</text>
+        <text x="55" y="370" fill="#aab5e6" font-size="11">resp: message + retrievedChunkIds</text>
+      </g>
+
+      <!-- Arrow 1 -->
+      <line x1="280" y1="230" x2="355" y2="230" stroke="#b7c8ff" stroke-width="2" marker-end="url(#arrow)"/>
+      <text x="293" y="222" fill="#b7c8ff" font-size="10">POST JSON</text>
+
+      <!-- Column 2: Server -->
+      <g class="node">
+        <rect x="360" y="30" width="360" height="380" rx="14" fill="url(#g-srv)" stroke="rgba(139,224,200,0.5)"/>
+        <text x="380" y="60" fill="#b6f0db" font-weight="700" font-size="14">SERVER · Express / Vercel serverless</text>
+        <text x="380" y="80" fill="#9fd3c0" font-size="11">server/src · api/chat.ts reuses chatRoute</text>
+
+        <rect x="380" y="100" width="320" height="60" rx="10" fill="rgba(139,224,200,0.12)" stroke="rgba(139,224,200,0.35)"/>
+        <text x="395" y="125" fill="#e8ecff" font-size="13" font-weight="600">chatRoute.ts — handleChatPost</text>
+        <text x="395" y="145" fill="#9fd3c0" font-size="11">validates body, picks active quarter, dispatches runChat</text>
+
+        <rect x="380" y="170" width="320" height="60" rx="10" fill="rgba(139,224,200,0.12)" stroke="rgba(139,224,200,0.35)"/>
+        <text x="395" y="195" fill="#e8ecff" font-size="13" font-weight="600">compileKnowledge.ts</text>
+        <text x="395" y="215" fill="#9fd3c0" font-size="11">snapshot → deterministic text chunks + overview</text>
+
+        <rect x="380" y="240" width="155" height="60" rx="10" fill="rgba(139,224,200,0.12)" stroke="rgba(139,224,200,0.35)"/>
+        <text x="395" y="265" fill="#e8ecff" font-size="13" font-weight="600">retriever.ts</text>
+        <text x="395" y="285" fill="#9fd3c0" font-size="11">lexical top-k chunks</text>
+
+        <rect x="545" y="240" width="155" height="60" rx="10" fill="rgba(139,224,200,0.12)" stroke="rgba(139,224,200,0.35)"/>
+        <text x="560" y="265" fill="#e8ecff" font-size="13" font-weight="600">tools.ts</text>
+        <text x="560" y="285" fill="#9fd3c0" font-size="11">8 snapshot-backed tools</text>
+
+        <rect x="380" y="310" width="320" height="80" rx="10" fill="rgba(139,224,200,0.08)" stroke="rgba(139,224,200,0.25)"/>
+        <text x="395" y="335" fill="#e8ecff" font-size="12" font-weight="600">chatOrchestrator.ts — runChat</text>
+        <text x="395" y="353" fill="#9fd3c0" font-size="11">builds system prompt, runs tool-calling loop</text>
+        <text x="395" y="370" fill="#9fd3c0" font-size="11">maxRounds: 8 · temperature: 0.35</text>
+      </g>
+
+      <!-- Arrow 2 -->
+      <line x1="720" y1="350" x2="815" y2="200" stroke="#ffd4a8" stroke-width="2" marker-end="url(#arrow-o)"/>
+      <text x="735" y="280" fill="#ffd4a8" font-size="10">Responses API</text>
+
+      <!-- Return arrow -->
+      <path d="M 815 250 C 770 320, 740 380, 720 390" fill="none" stroke="#ffd4a8" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#arrow-o)"/>
+      <text x="735" y="395" fill="#ffd4a8" font-size="10">tool_call or text</text>
+
+      <!-- Column 3: OpenAI -->
+      <g class="node">
+        <rect x="820" y="30" width="360" height="380" rx="14" fill="url(#g-ai)" stroke="rgba(255,184,107,0.5)"/>
+        <text x="840" y="60" fill="#ffd4a8" font-weight="700" font-size="14">OPENAI · Responses API</text>
+        <text x="840" y="80" fill="#e7b884" font-size="11">model: gpt-5.4 (configurable via OPENAI_MODEL)</text>
+
+        <rect x="840" y="100" width="320" height="70" rx="10" fill="rgba(255,184,107,0.12)" stroke="rgba(255,184,107,0.35)"/>
+        <text x="855" y="125" fill="#e8ecff" font-size="13" font-weight="600">System prompt (non-negotiable rules)</text>
+        <text x="855" y="143" fill="#e7b884" font-size="11">Snapshot is the only source of truth.</text>
+        <text x="855" y="160" fill="#e7b884" font-size="11">Never invent numbers. Never decide for the student.</text>
+
+        <rect x="840" y="180" width="320" height="70" rx="10" fill="rgba(255,184,107,0.12)" stroke="rgba(255,184,107,0.35)"/>
+        <text x="855" y="205" fill="#e8ecff" font-size="13" font-weight="600">Function tools (tool_choice: auto)</text>
+        <text x="855" y="223" fill="#e7b884" font-size="11">get_brand_performance, get_manufacturing_capacity,</text>
+        <text x="855" y="240" fill="#e7b884" font-size="11">get_balanced_scorecard, … + 5 more</text>
+
+        <rect x="840" y="260" width="320" height="70" rx="10" fill="rgba(255,184,107,0.12)" stroke="rgba(255,184,107,0.35)"/>
+        <text x="855" y="285" fill="#e8ecff" font-size="13" font-weight="600">Reply: plain-language answer</text>
+        <text x="855" y="303" fill="#e7b884" font-size="11">≤ 120 words, citations in [brackets],</text>
+        <text x="855" y="320" fill="#e7b884" font-size="11">optional coach-widget fenced JSON blocks</text>
+
+        <rect x="840" y="340" width="320" height="50" rx="10" fill="rgba(255,184,107,0.08)" stroke="rgba(255,184,107,0.25)" stroke-dasharray="4 3"/>
+        <text x="855" y="365" fill="#e8ecff" font-size="12" font-weight="600">Metadata stored: team, quarter, chunk IDs</text>
+        <text x="855" y="382" fill="#e7b884" font-size="11">store: true — no secrets returned to client</text>
+      </g>
+
+      <!-- Bottom label strip -->
+      <g>
+        <rect x="20" y="428" width="1160" height="0" fill="none"/>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<!-- ================= ORCHESTRATION FLOW ================= -->
+<section class="max-w-7xl mx-auto px-6 py-12">
+  <div class="tag tag-g">Orchestration</div>
+  <h2 class="mt-2 text-3xl font-bold">The chat tool-calling loop</h2>
+  <p class="mt-2 text-white/70 max-w-3xl text-sm">Up to 8 rounds per question. The model is free to call tools until it has the numbers it needs, then composes a grounded answer with citations and, when useful, one or two widgets.</p>
+
+  <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="glass p-5">
+      <div class="flex items-center gap-3"><span class="step-num">1</span><h3 class="font-semibold">Compile knowledge</h3></div>
+      <p class="mt-3 text-sm text-white/70">Active quarter's snapshot → chunks for meta, performance, brands, competitors, scorecard themes, manufacturing, marketing, finance, and HR. Every fact becomes searchable text with an ID.</p>
+    </div>
+    <div class="glass p-5">
+      <div class="flex items-center gap-3"><span class="step-num">2</span><h3 class="font-semibold">Retrieve chunks</h3></div>
+      <p class="mt-3 text-sm text-white/70">Lexical tokenizer drops stop-words, detects explicit quarter references (<span class="mono">Q2</span>, <span class="mono">quarter 3</span>), and picks the top-k (≤ 8) chunks most relevant to the user's question.</p>
+    </div>
+    <div class="glass p-5">
+      <div class="flex items-center gap-3"><span class="step-num">3</span><h3 class="font-semibold">Call the model</h3></div>
+      <p class="mt-3 text-sm text-white/70">System prompt encodes the non-negotiable rules + overview + retrieved chunks. The model may emit <span class="mono">function_call</span> items instead of a final message.</p>
+    </div>
+    <div class="glass p-5">
+      <div class="flex items-center gap-3"><span class="step-num">4</span><h3 class="font-semibold">Tool loop → answer</h3></div>
+      <p class="mt-3 text-sm text-white/70">Server runs each requested tool against the real snapshot and feeds outputs back. When the model stops calling tools, <span class="mono">output_text</span> returns plus <span class="mono">retrievedChunkIds</span>.</p>
+    </div>
+  </div>
+
+  <div class="divider my-10"></div>
+
+  <!-- Non-negotiable rules -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="glass p-6 lg:col-span-2">
+      <div class="tag tag-p">Guardrails</div>
+      <h3 class="mt-2 text-xl font-bold">Non-negotiable rules baked into the system prompt</h3>
+      <ul class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-white/80">
+        <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-[var(--accent)] shrink-0"></span> Treat the snapshot + tool outputs as the only source of truth for numbers.</li>
+        <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-[var(--accent)] shrink-0"></span> Never invent KPIs, financial figures, or competitor data.</li>
+        <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-[var(--accent-2)] shrink-0"></span> Never make the decision for the student.</li>
+        <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-[var(--accent-2)] shrink-0"></span> Frame as evidence, tradeoffs, risks — not recommendations.</li>
+        <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-[var(--warn)] shrink-0"></span> Plain language, ≤ 120 words by default, few key numbers.</li>
+        <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-[var(--warn)] shrink-0"></span> 1–2 square-bracket citations per concrete claim.</li>
+        <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-[var(--warn)] shrink-0"></span> At most one tradeoff widget; up to two chart widgets.</li>
+        <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-[var(--warn)] shrink-0"></span> Surface missing data — then still answer with what's available.</li>
+      </ul>
+    </div>
+    <div class="glass p-6">
+      <div class="tag tag-g">Contract</div>
+      <h3 class="mt-2 text-xl font-bold">API surface</h3>
+      <div class="mt-4 text-sm">
+        <div class="mono bg-black/30 border border-white/10 rounded-lg p-3">
+          <div><span class="text-emerald-300">GET</span> <span class="text-white">/api/health</span></div>
+          <div class="text-white/60">{ ok, openaiConfigured, model }</div>
+        </div>
+        <div class="mono bg-black/30 border border-white/10 rounded-lg p-3 mt-3">
+          <div><span class="text-sky-300">POST</span> <span class="text-white">/api/chat</span></div>
+          <div class="text-white/60">body: { messages, scenario, activeQuarterIndex }</div>
+          <div class="text-white/60">→ { message, retrievedChunkIds }</div>
+        </div>
+        <p class="mt-3 text-white/60 text-xs">No secrets are exposed to the client. <span class="mono">OPENAI_API_KEY</span> lives only on the server / Vercel env.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TOOLS ================= -->
+<section class="max-w-7xl mx-auto px-6 py-12">
+  <div class="tag tag-o">Function tools</div>
+  <h2 class="mt-2 text-3xl font-bold">8 tools that return exact figures from the live snapshot</h2>
+  <p class="mt-2 text-white/70 max-w-3xl text-sm">Every tool takes an optional <span class="mono">quarterIndex</span> (omit to use the active quarter from the UI). Numeric truth stays in the snapshot — chunks drive routing; tools drive precision.</p>
+
+  <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="glass p-5 card-hover">
+      <div class="flex items-center justify-between"><span class="tag tag-b">Overview</span><span class="mono text-xs text-white/50">#1</span></div>
+      <h3 class="mt-3 font-semibold mono text-sm">get_team_quarter_overview</h3>
+      <p class="mt-2 text-sm text-white/70">High-level team, quarter, overall share, revenue, and net income.</p>
+    </div>
+    <div class="glass p-5 card-hover">
+      <div class="flex items-center justify-between"><span class="tag tag-b">Brands</span><span class="mono text-xs text-white/50">#2</span></div>
+      <h3 class="mt-3 font-semibold mono text-sm">get_brand_performance</h3>
+      <p class="mt-2 text-sm text-white/70">Per-brand demand, sell-through, stockout, pricing, revenue, brand profit. Accepts <span class="mono">brandName</span>.</p>
+    </div>
+    <div class="glass p-5 card-hover">
+      <div class="flex items-center justify-between"><span class="tag tag-g">Scorecard</span><span class="mono text-xs text-white/50">#3</span></div>
+      <h3 class="mt-3 font-semibold mono text-sm">get_balanced_scorecard</h3>
+      <p class="mt-2 text-sm text-white/70">All Balanced Scorecard themes with scores, priors, trends, weights, cumulative index.</p>
+    </div>
+    <div class="glass p-5 card-hover">
+      <div class="flex items-center justify-between"><span class="tag tag-g">Finance</span><span class="mono text-xs text-white/50">#4</span></div>
+      <h3 class="mt-3 font-semibold mono text-sm">get_finance_and_cash</h3>
+      <p class="mt-2 text-sm text-white/70">Debt, dividends, begin/end cash from accounting, interest note.</p>
+    </div>
+    <div class="glass p-5 card-hover">
+      <div class="flex items-center justify-between"><span class="tag tag-o">Manufacturing</span><span class="mono text-xs text-white/50">#5</span></div>
+      <h3 class="mt-3 font-semibold mono text-sm">get_manufacturing_capacity</h3>
+      <p class="mt-2 text-sm text-white/70">Capacity, utilization, lost sales, inventory, next-quarter demand forecast, facilities.</p>
+    </div>
+    <div class="glass p-5 card-hover">
+      <div class="flex items-center justify-between"><span class="tag tag-o">Go-to-market</span><span class="mono text-xs text-white/50">#6</span></div>
+      <h3 class="mt-3 font-semibold mono text-sm">get_marketing_and_sales_summary</h3>
+      <p class="mt-2 text-sm text-white/70">Marketing spend mix, pricing notes, salespeople, regional coverage.</p>
+    </div>
+    <div class="glass p-5 card-hover">
+      <div class="flex items-center justify-between"><span class="tag tag-p">Trends</span><span class="mono text-xs text-white/50">#7</span></div>
+      <h3 class="mt-3 font-semibold mono text-sm">get_quarter_history_overview</h3>
+      <p class="mt-2 text-sm text-white/70">Compact KPI row per quarter — share, revenue, net income, scorecard, ending cash.</p>
+    </div>
+    <div class="glass p-5 card-hover">
+      <div class="flex items-center justify-between"><span class="tag tag-p">Trends</span><span class="mono text-xs text-white/50">#8</span></div>
+      <h3 class="mt-3 font-semibold mono text-sm">get_brand_history</h3>
+      <p class="mt-2 text-sm text-white/70">Per-brand, per-quarter series for demand, sold, revenue, and brand profit.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= WIDGETS ================= -->
+<section class="max-w-7xl mx-auto px-6 py-12">
+  <div class="tag tag-p">Coach widgets</div>
+  <h2 class="mt-2 text-3xl font-bold">The coach can reply with more than text</h2>
+  <p class="mt-2 text-white/70 max-w-3xl text-sm">When a visual helps, the model emits fenced <span class="mono">coach-widget</span> JSON blocks. The frontend parses them and renders interactive tradeoff comparisons or charts, with inline citations that deep-link to the right workspace panel.</p>
+
+  <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Tradeoff mock -->
+    <div class="glass p-5 card-hover">
+      <div class="flex items-center gap-2 text-xs text-white/60">
+        <span class="tag tag-b">widget</span><span class="mono">tradeoff_compare</span>
+      </div>
+      <h3 class="mt-3 font-semibold">Two options, side-by-side</h3>
+      <div class="mt-4 grid grid-cols-2 gap-3">
+        <div class="rounded-lg border border-white/10 p-3 bg-white/[0.02]">
+          <div class="text-xs text-white/60">Option A</div>
+          <div class="font-semibold text-sm mt-1">Raise Core price</div>
+          <ul class="mt-2 text-xs text-white/70 space-y-1 list-disc list-inside">
+            <li>Lifts margin, risks volume</li>
+            <li>Eases capacity pressure</li>
+          </ul>
+        </div>
+        <div class="rounded-lg border border-white/10 p-3 bg-white/[0.02]">
+          <div class="text-xs text-white/60">Option B</div>
+          <div class="font-semibold text-sm mt-1">Hold price, add capacity</div>
+          <ul class="mt-2 text-xs text-white/70 space-y-1 list-disc list-inside">
+            <li>Defends share, adds fixed cost</li>
+            <li>Payoff depends on demand lift</li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-3 text-xs text-white/60">Verdict framed as a decision lens, not a recommendation.</div>
+    </div>
+
+    <!-- Chart mock: competitor share -->
+    <div class="glass p-5 card-hover">
+      <div class="flex items-center gap-2 text-xs text-white/60">
+        <span class="tag tag-g">widget</span><span class="mono">chart · competitor-share</span>
+      </div>
+      <h3 class="mt-3 font-semibold">Market share by competitor</h3>
+      <svg viewBox="0 0 320 160" class="mt-3 w-full">
+        <g font-size="10" fill="#aab5e6">
+          <rect x="30" y="30" width="40" height="110" fill="rgba(122,162,255,0.3)" stroke="#7aa2ff"/>
+          <rect x="90" y="60" width="40" height="80" fill="rgba(139,224,200,0.3)" stroke="#8be0c8"/>
+          <rect x="150" y="80" width="40" height="60" fill="rgba(255,184,107,0.3)" stroke="#ffb86b"/>
+          <rect x="210" y="100" width="40" height="40" fill="rgba(204,153,255,0.3)" stroke="#cc99ff"/>
+          <text x="35" y="155">You</text>
+          <text x="92" y="155">Mira</text>
+          <text x="152" y="155">C</text>
+          <text x="212" y="155">D</text>
+          <text x="45" y="25" fill="#e8ecff">28%</text>
+          <text x="105" y="55" fill="#e8ecff">22%</text>
+          <text x="162" y="75" fill="#e8ecff">16%</text>
+          <text x="222" y="95" fill="#e8ecff">11%</text>
+        </g>
+      </svg>
+      <p class="mt-2 text-xs text-white/60">Illustrative only — real values come from the active snapshot.</p>
+    </div>
+
+    <!-- Chart mock: capacity vs forecast -->
+    <div class="glass p-5 card-hover">
+      <div class="flex items-center gap-2 text-xs text-white/60">
+        <span class="tag tag-o">widget</span><span class="mono">chart · capacity-vs-forecast</span>
+      </div>
+      <h3 class="mt-3 font-semibold">Demand projection vs capacity</h3>
+      <svg viewBox="0 0 320 160" class="mt-3 w-full">
+        <defs>
+          <linearGradient id="area" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#7aa2ff" stop-opacity="0.5"/>
+            <stop offset="100%" stop-color="#7aa2ff" stop-opacity="0.05"/>
+          </linearGradient>
+        </defs>
+        <polyline fill="none" stroke="#ffb86b" stroke-width="2" points="20,110 80,95 140,80 200,70 260,55 300,45"/>
+        <polyline fill="none" stroke="#8be0c8" stroke-width="2" stroke-dasharray="4 3" points="20,90 80,88 140,85 200,82 260,80 300,78"/>
+        <polygon fill="url(#area)" points="20,110 80,95 140,80 200,70 260,55 300,45 300,150 20,150"/>
+        <g font-size="10" fill="#aab5e6">
+          <text x="20" y="145">Q1</text><text x="80" y="145">Q2</text><text x="140" y="145">Q3</text>
+          <text x="200" y="145">Q4</text><text x="260" y="145">Q5</text><text x="295" y="145">Q6</text>
+        </g>
+        <g font-size="10">
+          <rect x="200" y="12" width="10" height="2" fill="#ffb86b"/><text x="215" y="15" fill="#ffd4a8">demand</text>
+          <rect x="260" y="12" width="10" height="2" fill="#8be0c8"/><text x="275" y="15" fill="#b6f0db">capacity</text>
+        </g>
+      </svg>
+      <p class="mt-2 text-xs text-white/60">Demand crossing capacity means lost sales — a classic tradeoff lens.</p>
+    </div>
+  </div>
+
+  <div class="mt-8 glass p-5">
+    <h3 class="font-semibold">Supported chart keys</h3>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <span class="chip mono">competitor-share</span>
+      <span class="chip mono">brand-demand-vs-sold</span>
+      <span class="chip mono">brand-profit</span>
+      <span class="chip mono">segment-demand</span>
+      <span class="chip mono">capacity-vs-forecast</span>
+      <span class="chip mono">scorecard-themes</span>
+      <span class="chip mono">quarter-trend · overall_share | revenue | net_income | ending_cash | scorecard_index</span>
+      <span class="chip mono">brand-history · Core | Nomad × demand | sold | revenue | brand_profit</span>
+      <span class="chip mono">strategic-graph · share_pct | market_appeal | cumulative_profit</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= WORKSPACE ================= -->
+<section class="max-w-7xl mx-auto px-6 py-12">
+  <div class="tag tag-b">Workspace</div>
+  <h2 class="mt-2 text-3xl font-bold">Seven modules mirror the simulation's decision surface</h2>
+  <p class="mt-2 text-white/70 max-w-3xl text-sm">Each module has a set of sub-views the coach can deep-link to via square-bracket citations like <span class="mono">[perf-share]</span>, <span class="mono">[score-mfg]</span>, <span class="mono">[mfg-cap]</span>, <span class="mono">[fin-cash]</span>.</p>
+
+  <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="glass p-5">
+      <h3 class="font-semibold">Performance & reports</h3>
+      <p class="text-xs text-white/60 mt-1">7 sub-views</p>
+      <ul class="mt-3 text-xs text-white/75 space-y-1">
+        <li>Performance report</li>
+        <li>Market share & demand</li>
+        <li>Financial reports</li>
+        <li>Balanced scorecard</li>
+        <li>Strategic graphs</li>
+        <li>Competitor profile</li>
+        <li>Detail brand demand</li>
+      </ul>
+    </div>
+    <div class="glass p-5">
+      <h3 class="font-semibold">Marketing</h3>
+      <p class="text-xs text-white/60 mt-1">5 sub-views</p>
+      <ul class="mt-3 text-xs text-white/75 space-y-1">
+        <li>Brand management</li>
+        <li>Pricing</li>
+        <li>Advertising</li>
+        <li>Buy market research</li>
+        <li>Tactical summary</li>
+      </ul>
+    </div>
+    <div class="glass p-5">
+      <h3 class="font-semibold">Sales</h3>
+      <p class="text-xs text-white/60 mt-1">5 sub-views</p>
+      <ul class="mt-3 text-xs text-white/75 space-y-1">
+        <li>Sales results</li>
+        <li>Regional profitability</li>
+        <li>Competitors in the city</li>
+        <li>Sales force</li>
+        <li>Tactical summary</li>
+      </ul>
+    </div>
+    <div class="glass p-5">
+      <h3 class="font-semibold">Manufacturing</h3>
+      <p class="text-xs text-white/60 mt-1">6 sub-views</p>
+      <ul class="mt-3 text-xs text-white/75 space-y-1">
+        <li>Inventory & prior results</li>
+        <li>Production facilities</li>
+        <li>Demand projection & capacity</li>
+        <li>Production plan</li>
+        <li>Quality & reliability</li>
+        <li>Tactical summary</li>
+      </ul>
+    </div>
+    <div class="glass p-5">
+      <h3 class="font-semibold">Human resources</h3>
+      <p class="text-xs text-white/60 mt-1">2 sub-views</p>
+      <ul class="mt-3 text-xs text-white/75 space-y-1">
+        <li>Compensation & benefits</li>
+        <li>Productivity</li>
+      </ul>
+    </div>
+    <div class="glass p-5">
+      <h3 class="font-semibold">Accounting</h3>
+      <p class="text-xs text-white/60 mt-1">5 sub-views</p>
+      <ul class="mt-3 text-xs text-white/75 space-y-1">
+        <li>Income statement</li>
+        <li>Cash flow</li>
+        <li>Balance sheet</li>
+        <li>Brand profitability</li>
+        <li>Industry financial ratios</li>
+      </ul>
+    </div>
+    <div class="glass p-5">
+      <h3 class="font-semibold">Finance</h3>
+      <p class="text-xs text-white/60 mt-1">3 sub-views</p>
+      <ul class="mt-3 text-xs text-white/75 space-y-1">
+        <li>Debt & equity</li>
+        <li>Dividends & repurchase</li>
+        <li>Pro forma note</li>
+      </ul>
+    </div>
+    <div class="glass p-5 border-dashed" style="border-style:dashed;">
+      <h3 class="font-semibold">AI Coach</h3>
+      <p class="text-xs text-white/60 mt-1">Chat page</p>
+      <p class="mt-3 text-xs text-white/75">Grounded answers, tradeoff + chart widgets, citation links back into every module above.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= STACK & DEPLOY ================= -->
+<section class="max-w-7xl mx-auto px-6 py-12">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="glass p-6">
+      <div class="tag tag-g">Stack</div>
+      <h3 class="mt-2 text-2xl font-bold">Tech at a glance</h3>
+      <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <div class="rounded-lg border border-white/10 p-3">
+          <div class="text-white/60 text-xs">Frontend</div>
+          <div class="mt-1">React · Vite · Tailwind · React Router · TypeScript</div>
+        </div>
+        <div class="rounded-lg border border-white/10 p-3">
+          <div class="text-white/60 text-xs">Server</div>
+          <div class="mt-1">Node 20+ · Express · OpenAI SDK · Vitest</div>
+        </div>
+        <div class="rounded-lg border border-white/10 p-3">
+          <div class="text-white/60 text-xs">AI</div>
+          <div class="mt-1">OpenAI Responses API · <span class="mono">gpt-5.4</span> default · function tools</div>
+        </div>
+        <div class="rounded-lg border border-white/10 p-3">
+          <div class="text-white/60 text-xs">Retrieval</div>
+          <div class="mt-1">Compiled chunks · lexical top-k (stop-word aware)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass p-6">
+      <div class="tag tag-o">Deployment</div>
+      <h3 class="mt-2 text-2xl font-bold">One port locally, serverless in prod</h3>
+      <ul class="mt-4 text-sm text-white/75 space-y-3">
+        <li><span class="mono bg-black/40 px-2 py-0.5 rounded">npm run dev</span> — single Node process serves Vite + <span class="mono">/api</span> on port 5173.</li>
+        <li><span class="mono bg-black/40 px-2 py-0.5 rounded">vercel.json</span> builds <span class="mono">frontend/dist</span> and deploys <span class="mono">api/chat.ts</span> + <span class="mono">api/health.ts</span>.</li>
+        <li>Secrets stay server-side: <span class="mono">OPENAI_API_KEY</span> set in Vercel env, never in client bundles.</li>
+        <li>Integration tests hit the real Responses API when <span class="mono">OPENAI_API_KEY</span> is configured.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<section class="max-w-7xl mx-auto px-6 pt-6 pb-14">
+  <div class="divider mb-8"></div>
+  <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-white/60">
+    <div>
+      Disclaimer: UI and data are <strong>fictional</strong> and recreated for a student innovation pitch. Not affiliated with Marketplace® or ILS.
+    </div>
+    <div class="flex items-center gap-4">
+      <span class="mono">MIT License</span>
+      <span>·</span>
+      <span class="mono">github.com/AlexGiurea/marketplace-analyst</span>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

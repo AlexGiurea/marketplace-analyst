@@ -160,7 +160,8 @@ Suggested **topics:** `react`, `vite`, `openai`, `education`, `business-simulati
 
 ## Security
 
-- Keep **`OPENAI_API_KEY`** only on the server / Vercel env — never in client bundles or public repos.
+- Keep **`OPENAI_API_KEY`** only on the server and in **Vercel Project → Settings → Environment Variables** (Production / Preview as needed). Never put keys in the frontend bundle, `Vite` `import.meta.env` public vars, or committed files. Use `server/.env` locally (gitignored); copy from `server/.env.example`.
+- **Rate limits** on `POST /api/chat`: per-IP sliding window (default 20 requests per 60s) plus an hourly ceiling (default 150/hour). Tunable with `CHAT_RATE_LIMIT_*` in `server/.env.example`. Payload size and message length are capped to reduce abuse. In-memory limits apply per serverless instance; for heavy public traffic add Vercel **Deployment Protection** / WAF or a shared store (e.g. Redis) for global quotas.
 - Rotate keys if exposed.
 
 ---
@@ -168,3 +169,22 @@ Suggested **topics:** `react`, `vite`, `openai`, `education`, `business-simulati
 ## License
 
 MIT — see [LICENSE](./LICENSE).
+
+---
+
+## Competition submission materials (Teaching Innovations Con / Marketplace AI)
+
+Prepared for Round 1 (written proposal), Round 2 (prototype + video), and shared messaging:
+
+| Document | Purpose |
+|----------|---------|
+| [docs/submission-audit-2025.md](./docs/submission-audit-2025.md) | Product/assets audit vs live demo |
+| [docs/submission-round-1-proposal.md](./docs/submission-round-1-proposal.md) | Round 1 proposal draft (paste into form) |
+| [docs/submission-messaging-kit.md](./docs/submission-messaging-kit.md) | One-liners, pitch, features, wording guardrails |
+| [docs/submission-round-2-kit.md](./docs/submission-round-2-kit.md) | Round 2 prototype package: link, code, screenshots, placement |
+| [docs/submission-round-2-demo-script.md](./docs/submission-round-2-demo-script.md) | Video/live demo script |
+| [docs/pre-submission-browser-checklist.md](./docs/pre-submission-browser-checklist.md) | Production QA + screenshot filenames |
+
+Round 1 PDF exports: [docs/Marketplace-Analyst-Round-1-Submission.pdf](./docs/Marketplace-Analyst-Round-1-Submission.pdf) (full-size figures), [docs/Marketplace-Analyst-Round-1-Submission-compact.pdf](./docs/Marketplace-Analyst-Round-1-Submission-compact.pdf) (smaller centered screenshots), [docs/Marketplace-Analyst-Round-1-Submission-spaced.pdf](./docs/Marketplace-Analyst-Round-1-Submission-spaced.pdf) (extra text between figures, widget callouts, compact centered screenshots). Source HTML: [docs/submission-round-1-upload.html](./docs/submission-round-1-upload.html), [docs/submission-round-1-upload-compact.html](./docs/submission-round-1-upload-compact.html), [docs/submission-round-1-upload-spaced.html](./docs/submission-round-1-upload-spaced.html).
+
+Screenshots: `assets/submission-*.png` and `assets/r1-proposal-*.png` (Round 1 doc embeds the latter from production captures).

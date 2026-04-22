@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Marketplace Analyst Round 1 Submission</title>
+    <style>
+      @page {
+        size: letter;
+        margin: 0.6in;
+      }
+
+      :root {
+        color-scheme: light;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #10223a;
+        background: #ffffff;
+        line-height: 1.55;
+        font-size: 11pt;
+      }
+
+      main {
+        max-width: 8.5in;
+        margin: 0 auto;
+      }
+
+      h1,
+      h2 {
+        color: #0b4d7d;
+        line-height: 1.2;
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 22pt;
+        margin-bottom: 10px;
+      }
+
+      h2 {
+        font-size: 15pt;
+        margin-top: 22px;
+        margin-bottom: 10px;
+        padding-top: 8px;
+        border-top: 2px solid #d7e3ee;
+      }
+
+      p {
+        margin: 0 0 12px 0;
+      }
+
+      .lead {
+        font-size: 11.5pt;
+      }
+
+      .meta {
+        margin: 12px 0 18px;
+        padding: 12px 14px;
+        border: 1px solid #d7e3ee;
+        background: #f6fafc;
+        border-radius: 10px;
+      }
+
+      .meta p {
+        margin: 0 0 6px 0;
+      }
+
+      .meta p:last-child {
+        margin-bottom: 0;
+      }
+
+      a {
+        color: #0b4d7d;
+        text-decoration: none;
+      }
+
+      .callout {
+        margin: 14px 0 18px;
+        padding: 14px 16px;
+        background: #f2f8fc;
+        border-left: 4px solid #0b6381;
+        border-radius: 8px;
+      }
+
+      figure {
+        margin: 16px 0 18px;
+        page-break-inside: avoid;
+      }
+
+      img {
+        display: block;
+        width: 100%;
+        max-width: 760px;
+        margin: 0 auto;
+        border: 1px solid #d7e3ee;
+        border-radius: 10px;
+      }
+
+      figcaption {
+        margin-top: 7px;
+        color: #4d6177;
+        font-size: 9.5pt;
+        text-align: center;
+      }
+
+      .footer-note {
+        margin-top: 18px;
+        padding-top: 10px;
+        border-top: 1px solid #d7e3ee;
+        color: #4d6177;
+        font-size: 9.5pt;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Marketplace Analyst</h1>
+      <p class="lead">
+        Round 1 submission for the Marketplace AI Competition. This proposal presents Marketplace Analyst as a
+        grounded decision support layer for Marketplace style simulation performance and strategy.
+      </p>
+      <p>
+        This package goes a modest step beyond a text only answer: it already points to a live Vercel deployment you
+        can click through, so the submission doubles as an early showcase of what the project looks like and how it
+        behaves in a browser, not only as a written concept.
+      </p>
+      <p>
+        I am aware that Marketplace Simulations already ships an AI coach style experience inside its platform. What I
+        am arguing here is that this design is a fuller and more helpful companion for the kind of work students do in
+        the simulation: it is more visual, more flexible in how it presents evidence, and built to keep answers grounded
+        in the quarter snapshot through citations and widgets, which can also make outcomes feel more accurate than a
+        plain text chat alone for numeric, report heavy work.
+      </p>
+
+      <div class="meta">
+        <p><strong>Submission title:</strong> Marketplace Analyst: grounded decision support for simulation performance and strategy</p>
+        <p><strong>Live demo:</strong> <a href="https://marketplace-analyst.vercel.app">https://marketplace-analyst.vercel.app</a></p>
+        <p><strong>Repository:</strong> <a href="https://github.com/AlexGiurea/marketplace-analyst">https://github.com/AlexGiurea/marketplace-analyst</a></p>
+      </div>
+
+      <h2>1. How are businesses currently using this idea in the workforce?</h2>
+      <p>
+        Real teams already use a combination of structured operational data and language models when they need to
+        move quickly on performance reviews, variance stories, competitive moves, capacity and demand risk, and
+        questions about what changed before a planning or leadership meeting. The pattern is consistent even when the
+        vendor stack changes. Dashboards and ERP style systems hold the truth, retrieval or tool calls keep the model
+        tied to that truth, and the model adds short explanations, comparisons, and tradeoff framing so people can
+        reach a better discussion faster without pretending the spreadsheet or report no longer matters.
+      </p>
+      <p>
+        That is the same muscle as an internal briefing where someone says here is what moved, here is what worries
+        me, and here are two ways to read it, except the system can support the first draft and the follow up
+        questions in real time. The role might sit in finance, operations, or strategy, but the underlying function is
+        still interpretation and preparation, with humans responsible for the final decision. Marketplace Analyst is a
+        student facing version of that practice. It helps the learner see the story in the data instead of outsourcing
+        the strategy itself.
+      </p>
+
+      <h2>2. How could this type of AI be incorporated into a Marketplace simulation?</h2>
+      <p>
+        Marketplace Analyst is designed to live inside the student workflow between rounds. Instead of sending the
+        student to a separate homework style chatbot, it places a coach beside the same reports they already need to
+        interpret. A student can ask in ordinary language what matters for their team this quarter and receive short,
+        grounded answers tied to the numbers already loaded for that run.
+      </p>
+      <p>
+        The coach opens with the active quarter and team already in context, which keeps the interaction specific to
+        the student’s simulation state rather than generic business advice. It also exposes source notes that feel like
+        a lightweight index of the key facts the assistant can reference from performance, manufacturing, finance, and
+        scorecard views.
+      </p>
+
+      <figure>
+        <img src="../assets/r1-proposal-01-coach-home.png" alt="AI Coach home with current quarter context and dashboard shortcuts" />
+        <figcaption>AI Coach home with the active quarter, team context, and direct dashboard shortcuts.</figcaption>
+      </figure>
+
+      <p>
+        When those source notes are expanded, the student can immediately see that the experience is grounded in named
+        facts and report areas rather than vague summaries. That makes the tool feel inspectable and accountable, which
+        matters both pedagogically and practically.
+      </p>
+
+      <figure>
+        <img src="../assets/r1-proposal-02-source-notes.png" alt="Expanded source notes with linked facts" />
+        <figcaption>Expanded source notes showing linked facts from the loaded quarter snapshot.</figcaption>
+      </figure>
+
+      <p>
+        From there the student can ask for an interpretation, a risk check, or a visual overview. In the current
+        prototype, one tap can request a quarter dashboard inside the conversation so the reply becomes a compact
+        briefing with revenue, share, net income, and a path to go deeper.
+      </p>
+
+      <figure>
+        <img src="../assets/r1-proposal-03b-dashboard-widget-viewport.png" alt="Quarter dashboard preview widget inside chat" />
+        <figcaption>Quarter dashboard preview rendered directly inside the conversation.</figcaption>
+      </figure>
+
+      <p>
+        If the student wants more than a quick summary, the preview opens a richer dashboard layer with overview,
+        market and brands, financial, and operations tabs. This makes the placement inside Marketplace easy to imagine.
+        The assistant is not replacing the workspace. It is adding a guided readout beside the same KPI trail the
+        course already rewards.
+      </p>
+
+      <figure>
+        <img src="../assets/r1-proposal-04-dashboard-overlay.png" alt="Expanded quarter dashboard overlay with KPIs and executive overview" />
+        <figcaption>Expanded dashboard overlay with KPI summary and executive overview.</figcaption>
+      </figure>
+
+      <figure>
+        <img src="../assets/r1-proposal-widget-chart-share.png" alt="Chart widget showing competitor market share bars" />
+        <figcaption>Example chart widget: competitor market share for the active quarter, rendered inside the coach thread.</figcaption>
+      </figure>
+
+      <figure>
+        <img src="../assets/r1-proposal-widget-tradeoff.png" alt="Tradeoff comparison widget Core vs Nomad" />
+        <figcaption>Example tradeoff comparison widget: side by side framing of strategic options with linked citations.</figcaption>
+      </figure>
+
+      <p>
+        The other half of the experience is the workspace itself. Citations from chat are meant to land in the same
+        module shell students already use, which reinforces that the coach is a voice layer on top of reports they
+        still need to read, question, and defend.
+      </p>
+
+      <figure>
+        <img src="../assets/r1-proposal-06-workspace.png" alt="Quarter workspace with performance report and simulation style navigation" />
+        <figcaption>Quarter workspace showing the simulation style report environment the assistant connects back into.</figcaption>
+      </figure>
+
+      <p>
+        In practice, students would use this after results post, during debrief, and before locking inputs. Across the
+        term it reinforces evidence based reasoning for presentations and team defense in the same way a manager backs a
+        recommendation with numbers in a real meeting.
+      </p>
+
+      <div class="callout">
+        <strong>Live demo reference:</strong> The current prototype is publicly available at
+        <a href="https://marketplace-analyst.vercel.app">https://marketplace-analyst.vercel.app</a>.
+      </div>
+
+      <h2>3. What AI tools or applications could be used to support this idea?</h2>
+      <p>
+        The demonstration is built with a standard web stack so it is easy to host, inspect, and extend. The browser
+        talks to one origin that serves the React interface and the API routes. On the server, the live snapshot is
+        compiled into text, lightweight retrieval is run over that text for the user’s question, and OpenAI is called
+        through a responses style flow with function tools wired to the same snapshot so KPI pulls are not invented in
+        free text. Vercel runs the static build and the serverless handlers for chat and health while secrets stay off
+        the client. None of that is exotic compared with what a university or vendor team could support in a pilot.
+      </p>
+      <p>
+        In practical terms, the system performs structured reads and plain language narration. It explains share, cash,
+        manufacturing pressure, and scorecard movement, and when a chart or tradeoff panel is helpful, the interface
+        renders that as a first class visual block instead of hiding the logic inside one long answer. What the student
+        receives is readable language, optional visuals, and links that take them from an answer into the exact part of
+        the workspace that holds the supporting evidence.
+      </p>
+      <p>
+        For learning, that fits the pattern of workplace analytics copilots tied to ERP or BI systems more closely than
+        a novelty chatbot. The goal is not to print a single best strategy. The goal is to help students ask better
+        questions, interpret the quarter more clearly, and defend their choices with evidence.
+      </p>
+
+      <h2>Feasibility</h2>
+      <p>
+        The idea is incremental by design. It attaches a coach UI to structured simulation state, adds retrieval and
+        tool backed reads, and ships on standard hosting. That is a reasonable scope compared with building a fully
+        autonomous agent that pretends to run an entire firm. The public demo lets reviewers click through the concept
+        rather than imagine it from a wireframe alone.
+      </p>
+
+      <p class="footer-note">
+        Supporting screenshots for this submission are included directly in this PDF and are also available in the
+        project under <code>assets/r1-proposal-*.png</code> and <code>assets/r1-proposal-widget-*.png</code>. Live demo:
+        <a href="https://marketplace-analyst.vercel.app">https://marketplace-analyst.vercel.app</a>.
+      </p>
+    </main>
+  </body>
+</html>

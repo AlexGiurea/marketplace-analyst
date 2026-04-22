@@ -9,7 +9,7 @@ Mark each row **Pass** or **Fail** with a one-line note. Screenshots for submiss
 | # | Check | Pass criteria |
 |---|--------|----------------|
 | A1 | Home (`/`) loads | Title "Marketplace AI Demo", coach shell visible, no blank screen |
-| A2 | Direct load `/workspace` | Same app shell, workspace layout (not 404) |
+| A2 | Direct load `/workspace` | Same app shell, workspace layout (not 404) — SPA rewrite in root `vercel.json` should serve `index.html` for client routes; re-verify after each deploy |
 | A3 | Browser back/forward | Reasonable (SPA); no broken state after navigating Coach ↔ Workspace |
 
 ## B. AI Coach (`/`)
@@ -71,7 +71,7 @@ Mark each row **Pass** or **Fail** with a one-line note. Screenshots for submiss
 
 | Step | Result | Notes |
 |------|--------|-------|
-| A1–A3 | **Partial** | **A1 Pass** — `/` loads. **A2 Fail (direct URL)** — cold navigation to `https://marketplace-analyst.vercel.app/workspace` returns **Vercel 404 NOT_FOUND**. **A3 Pass (in-session)** — using in-app **Quarter workspace** / **AI Coach** links works; URL becomes `/workspace` or `/` and UI updates. **Action:** add SPA fallback in `vercel.json` (rewrite all non-API paths to `index.html`) so judges can open or refresh `/workspace`. |
+| A1–A3 | **Re-verify** | **A1** — `/` loads. **A2** — With SPA rewrite in `vercel.json`, cold `/workspace` should load the app; confirm production after deploy. **A3** — Coach ↔ Workspace navigation works. |
 | B1–B7 | **Mostly pass** | **B1** — Production still shows older seed copy (“compare to earlier quarters…”) and footer “Check important numbers before you act.” Redeploy after merging latest `ChatPage` / `ChatCoachContext` for the new decision-support wording. **B2–B5** Pass. **B6 Pass** — short question returned answer with share **18.4%** and citation links. **B7 Pass** — `[ Overall share ]` renders as links. |
 | C1–C6 | **Pass (in-app)** | Workspace shows title bar, quarter dropdown, disabled **Wrap up / Submit** (demo), amber disclaimer, teal nav, performance table / overall share. Snapshot tree is sometimes thin; visual screenshot confirms layout. |
 | D1–D4 | **Pass** | Coherent teal/sky/white theme; tables + sidebar readable; submit disabled with honest copy. |
